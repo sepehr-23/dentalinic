@@ -56,8 +56,8 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             $_SESSION["id"] = $id;
                             $_SESSION["username"] = $username_db;
 
-                            // Redirect user to welcome page (create this page next)
-                            header("location: welcome.php");
+                            // Redirect user to dashboard page
+                            header("location: dashboard.php");
                         } else{
                             // Password is not valid
                             $login_err = "Invalid username or password.";
