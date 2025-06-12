@@ -1,0 +1,156 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    padding: 20px;
+    direction: rtl; /* Right-to-left for Farsi */
+    background-color: #f4f4f4;
+}
+
+.container {
+    max-width: 800px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    color: #333;
+    text-align: center;
+}
+
+#patientRegistrationForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between form elements */
+}
+
+#patientRegistrationForm label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+#patientRegistrationForm input[type="text"],
+#patientRegistrationForm input[type="tel"],
+#patientRegistrationForm input[type="number"],
+#patientRegistrationForm select,
+#patientRegistrationForm textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 5px; /* Adjusted from margin to margin-bottom for consistency */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensures padding doesn't affect overall width */
+}
+
+#patientRegistrationForm textarea {
+    min-height: 80px;
+    resize: vertical; /* Allow vertical resizing */
+}
+
+#patientRegistrationForm button[type="submit"] {
+    background-color: #5cb85c;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#patientRegistrationForm button[type="submit"]:hover {
+    background-color: #4cae4c;
+}
+
+#patientDisplayArea {
+    margin-top: 30px;
+}
+
+.patient-card {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.patient-card h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #337ab7; /* A slightly different color for patient names */
+}
+
+.patient-card p {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.payment-status {
+    display: inline-block; /* Allows for padding and keeps it on one line if possible */
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-right: 10px; /* Added margin for spacing from buttons */
+}
+
+.payment-status.unpaid {
+    background-color: #d9534f; /* Red */
+}
+
+.payment-status.pending {
+    background-color: #f0ad4e; /* Orange */
+}
+
+.payment-status.paid {
+    background-color: #5cb85c; /* Green */
+}
+
+.patient-card button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top:10px;
+    margin-left: 5px; /* Space between buttons */
+}
+
+.patient-card button:hover {
+    background-color: #0056b3;
+}
+
+.patient-card button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+
+/* Basic responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+    }
+
+    #patientRegistrationForm input[type="text"],
+    #patientRegistrationForm input[type="tel"],
+    #patientRegistrationForm input[type="number"],
+    #patientRegistrationForm select,
+    #patientRegistrationForm textarea {
+        font-size: 16px; /* Improve readability on smaller devices */
+    }
+
+    #patientRegistrationForm button[type="submit"] {
+        font-size: 18px;
+    }
+}
