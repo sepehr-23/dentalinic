@@ -1,0 +1,112 @@
+/* Dental Clinic Login Page Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #e0f7fa; /* Light cyan - calming */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    /* Placeholder for a background image - to be added via HTML or more specific CSS if possible */
+    /* background-image: url('path/to/dental-background.jpg'); */
+    /* background-size: cover; */
+    /* background-position: center; */
+}
+
+.login-container {
+    background-color: #ffffff;
+    padding: 30px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    width: 350px;
+    text-align: left;
+}
+
+h2 {
+    text-align: center;
+    color: #00796b; /* Teal - professional and calming */
+    margin-bottom: 25px;
+    font-size: 28px;
+}
+
+p {
+    text-align: center;
+    color: #555;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: #004d40; /* Darker Teal */
+    font-size: 14px;
+    font-weight: 600;
+}
+
+input[type="text"],
+input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #b2dfdb; /* Light Teal border */
+    border-radius: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+    border-color: #00796b; /* Teal focus border */
+    outline: none;
+}
+
+input[type="submit"] {
+    width: 100%;
+    background-color: #00796b; /* Teal */
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover {
+    background-color: #004d40; /* Darker Teal on hover */
+}
+
+.error-message {
+    color: #d32f2f; /* Red for errors */
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 13px;
+    background-color: #ffebee; /* Light red background for error */
+    padding: 10px;
+    border-radius: 3px;
+    border: 1px solid #d32f2f;
+}
+
+/* Styles for inline error messages next to fields */
+form div span {
+    color: #d32f2f;
+    font-size: 12px;
+    display: block; /* Make sure it takes its own line if needed */
+    margin-top: -10px; /* Adjust to be closer to the input field */
+    margin-bottom: 10px; /* Space before the next element */
+}
+
+/* Optional: Add a logo placeholder area */
+.logo-placeholder {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 20px;
+    color: #00796b;
+    /* background-image: url('path/to/dental-logo.png'); */
+    /* background-repeat: no-repeat; */
+    /* background-position: center; */
+    /* height: 80px; */ /* Adjust as needed */
+}
