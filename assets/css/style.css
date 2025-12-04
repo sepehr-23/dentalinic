@@ -1,0 +1,329 @@
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn/Vazirmatn-font-face.css');
+
+:root {
+    --coffee-dark: #4B3621;
+    --coffee-medium: #7A5C3C;
+    --coffee-light: #D2B48C;
+    --gold: #D4AF37;
+    --pink: #F4B1B1;
+    --silver: #C0C0C0;
+    --text-dark: #333;
+    --text-light: #F5F5F5;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Vazirmatn', Tahoma, sans-serif;
+    background: #fdf8f2;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+/* ---------------- LOGIN ---------------- */
+.login-body {
+    background: linear-gradient(135deg, #fdf3f0, #f5e9dc);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.login-container {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 6px 25px rgba(75, 54, 33, 0.15);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+.login-container .logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--coffee-dark);
+    margin-bottom: 1rem;
+}
+.login-container h2 {
+    margin-bottom: 1.5rem;
+    color: var(--coffee-medium);
+}
+.login-container label {
+    display: block;
+    text-align: right;
+    margin: 0.8rem 0 0.3rem;
+    font-weight: bold;
+}
+.login-container input {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #d9cfc2;
+    border-radius: 6px;
+    font-size: 1rem;
+    direction: ltr;
+}
+.login-container button {
+    background: var(--gold);
+    color: var(--coffee-dark);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    transition: 0.2s;
+}
+.login-container button:hover {
+    background: #c19a2e;
+    transform: translateY(-1px);
+}
+
+/* ---------------- HEADER ---------------- */
+.header {
+    background: linear-gradient(90deg, var(--coffee-dark), #5a442f);
+    color: var(--text-light);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.header h1 { font-size: 1.6rem; }
+
+/* ---------------- NAV ---------------- */
+.nav-menu {
+    background: var(--coffee-medium);
+    padding: 0.8rem 1rem;
+}
+.nav-menu ul {
+    list-style: none;
+    display: flex;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+}
+.nav-menu a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.12);
+    transition: 0.2s;
+}
+.nav-menu a:hover {
+    background: var(--gold);
+    color: var(--coffee-dark);
+    transform: translateY(-1px);
+}
+
+/* ---------------- CONTENT ---------------- */
+.content { padding: 1.8rem; }
+
+/* ---------------- CARD ---------------- */
+.card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-top: 3px solid var(--gold);
+}
+.card h2 {
+    color: var(--coffee-dark);
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--pink);
+}
+
+/* ---------------- TABLE ---------------- */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    border-radius: 6px;
+    overflow: hidden;
+}
+table th, table td {
+    padding: 0.75rem;
+    text-align: center;
+    border: 1px solid #eee;
+}
+table th {
+    background: var(--coffee-light);
+    color: var(--coffee-dark);
+    font-weight: bold;
+}
+table tr:nth-child(even) { background: #fcf9f5; }
+table tr:hover { background: #fdf6ee !important; }
+
+/* ---------------- ALERT ---------------- */
+.alert {
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+}
+.alert-error {
+    background: #ffebee;
+    color: #c62828;
+    border-left: 4px solid #ef5350;
+}
+.alert-success {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-left: 4px solid #4caf50;
+}
+
+/* ---------------- BUTTONS ---------------- */
+.btn {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--coffee-dark);
+    padding: 0.5rem 1rem;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+.btn-secondary {
+    background: var(--coffee-medium);
+    color: white;
+}
+.btn-danger {
+    background: #e53935;
+    color: white;
+}
+
+/* ---------------- FORM ---------------- */
+.form-group {
+    margin-bottom: 1.2rem;
+}
+.form-group label {
+    display: block;
+    text-align: right;
+    margin-bottom: 0.4rem;
+    font-weight: bold;
+    color: var(--coffee-dark);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #d9cfc2;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #fffefc;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+/* ---------------- ITEMS TABLE ---------------- */
+.items-table {
+    width: 100%;
+    margin-top: 1rem;
+    border-collapse: collapse;
+}
+.items-table th,
+.items-table td {
+    padding: 0.6rem;
+    border: 1px solid #e8dccc;
+    text-align: center;
+}
+
+/* ---------------- MODAL ---------------- */
+#rejectModal {
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:1000;
+    justify-content:center;
+    align-items:center;
+}
+#rejectModal > div {
+    background:white;
+    padding:1.5rem;
+    border-radius:8px;
+    width:90%;
+    max-width:400px;
+    text-align:right;
+}
+
+/* --------------------------------------------------- */
+/* ----------  NEW USERS MANAGEMENT STYLES  ----------- */
+/* --------------------------------------------------- */
+
+.users-table-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.4rem;
+}
+
+.delete-btn {
+    background: #ff4d4d;
+    color: white;
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s;
+}
+.delete-btn:hover {
+    background: #d93636;
+    transform: translateY(-1px);
+}
+
+/* دکمه‌های کوچک کنار لیست کاربران */
+.small-btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.85rem;
+}
+
+/* فرم ایجاد کاربر زیباتر */
+.user-form {
+    background: #fffdfa;
+    padding: 1rem 1.3rem;
+    border-radius: 10px;
+    border: 1px solid #eedfcb;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+}
+
+/* جدول کاربران */
+.users-table tr td {
+    font-size: 0.95rem;
+}
+
+/* برچسب نقش */
+.role-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    background: var(--coffee-light);
+    color: var(--coffee-dark);
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+/* برچسب استان */
+.province-badge {
+    padding: 0.25rem 0.6rem;
+    background: #f2e7d8;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
