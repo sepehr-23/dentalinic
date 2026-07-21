@@ -1,0 +1,290 @@
+jQuery(document).ready(function($) {
+
+    // ذخیره تنظیمات عمومی
+    $('#smart-ai-settings-form').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var submitBtn = form.find('.smart-ai-btn');
+        var loader = $('#settings-loader');
+        var resultBox = $('#settings-result');
+
+        submitBtn.prop('disabled', true);
+        loader.css('display', 'flex');
+        resultBox.hide();
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_save_settings',
+                security: smart_ai_params.nonce,
+                api_provider: $('#api_provider').val(),
+                api_key: $('#api_key').val(),
+                unsplash_key: $('#unsplash_key').val(),
+                tone: $('#tone').val()
+            },
+            success: function(response) {
+                loader.hide();
+                submitBtn.prop('disabled', false);
+                if (response.success) {
+                    resultBox.removeClass('error').html(response.data.message).fadeIn();
+                } else {
+                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                }
+            },
+            error: function() {
+                loader.hide();
+                submitBtn.prop('disabled', false);
+                resultBox.addClass('error').html('خطایی در ارتباط با سرور رخ داد.').fadeIn();
+            }
+        });
+    });
+
+    // سئو و بهینه‌سازی مقاله قدیمی با دکمه جادویی
+    $('.optimize-single-post').on('click', function() {
+        var btn = $(this);
+        var postId = btn.data('post-id');
+        var keywordInput = $('#keyword-' + postId);
+        var keyword = keywordInput.val();
+        var statusCell = $('#status-' + postId);
+
+        if (!keyword) {
+            alert('لطفاً ابتدا کلمه کلیدی را برای این مقاله وارد کنید.');
+            keywordInput.focus();
+            return;
+        }
+
+        btn.prop('disabled', true);
+        statusCell.html('<div class="smart-ai-spinner"></div> در حال تحلیل و بهبود سئو...');
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_optimize_post',
+                security: smart_ai_params.nonce,
+                post_id: postId,
+                keyword: keyword
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                if (response.success) {
+                    statusCell.html('<span style="color: green; font-weight: bold;">✔ بهینه‌سازی شد (تیک سبز سئو ست شد!)</span>');
+                    alert(response.data.message);
+                } else {
+                    statusCell.html('<span style="color: red;">❌ خطا در بهینه‌سازی</span>');
+                    alert('خطا: ' + response.data.message);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                statusCell.html('<span style="color: red;">❌ خطای ارتباطی</span>');
+            }
+        });
+    });
+
+    // مرحله اول: تحلیل و جستجوی رقبای گوگل
+    $('#analyze-competitors-btn').on('click', function() {
+        var keyword = $('#writer_keyword').val();
+        if (!keyword) {
+            alert('لطفاً کلمه کلیدی را بنویسید.');
+            return;
+        }
+
+        var btn = $(this);
+        var loader = $('#writer-loader');
+        var resultBox = $('#writer-result');
+        var compBox = $('#competitor-results-box');
+
+        btn.prop('disabled', true);
+        loader.html('<div class="smart-ai-spinner"></div> در حال جستجوی گوگل و تحلیل ۳ رقیب اول...').css('display', 'flex');
+        resultBox.hide();
+        compBox.hide();
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_analyze_competitors',
+                security: smart_ai_params.nonce,
+                keyword: keyword
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                loader.hide();
+                if (response.success) {
+                    var html = '';
+                    var competitors = response.data.competitors;
+
+                    competitors.forEach(function(item, index) {
+                        html += '<div class="wp-smart-ai-card" style="border-right: 4px solid #440047; padding: 15px; margin-bottom: 10px;">';
+                        html += '<h4>رقیب شماره ' + (index + 1) + ': <a href="' + item.url + '" target="_blank">' + item.title + '</a></h4>';
+                        html += '<textarea class="competitor-snippet" style="width:100%; height:80px;" readonly>' + item.snippet + '</textarea>';
+                        html += '</div>';
+                    });
+
+                    $('#competitor-list').html(html);
+                    compBox.fadeIn();
+                } else {
+                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                loader.hide();
+                resultBox.addClass('error').html('خطا در بارگذاری رقبا.').fadeIn();
+            }
+        });
+    });
+
+    // مرحله دوم: تولید مقاله برتر و نهایی رقابتی
+    $('#generate-best-article-btn').on('click', function() {
+        var keyword = $('#writer_keyword').val();
+        var competitorTexts = '';
+
+        $('.competitor-snippet').each(function() {
+            competitorTexts += $(this).val() + "\n---\n";
+        });
+
+        var btn = $(this);
+        var loader = $('#writer-loader');
+        var resultBox = $('#writer-result');
+
+        btn.prop('disabled', true);
+        loader.html('<div class="smart-ai-spinner"></div> در حال نگارش مقاله برتر با قلم هوش مصنوعی، ایجاد آلت تگ‌ها و هماهنگی با رنک مث... (ممکن است چند دقیقه طول بکشد)').css('display', 'flex');
+        resultBox.hide();
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_generate_new_post',
+                security: smart_ai_params.nonce,
+                keyword: keyword,
+                competitor_data: competitorTexts
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                loader.hide();
+                if (response.success) {
+                    var successHtml = '<h4>🎉 مقاله بی رقیب شما آماده شد!</h4>';
+                    successHtml += '<p>' + response.data.message + '</p>';
+                    successHtml += '<a href="' + response.data.edit_url + '" class="button button-primary button-large" target="_blank">رفتن به ویرایشگر پیش‌نویس مقاله</a>';
+                    resultBox.removeClass('error').html(successHtml).fadeIn();
+                } else {
+                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                loader.hide();
+                resultBox.addClass('error').html('خطا در تولید مقاله نهایی رقابتی.').fadeIn();
+            }
+        });
+    });
+
+    // پیلار و کلاستر: پیشنهاد خوشه‌های محتوایی
+    $('#suggest-clusters-btn').on('click', function() {
+        var pillarId = $('#pillar_post_select').val();
+        if (!pillarId) {
+            alert('لطفاً یک مقاله مادر (Pillar) انتخاب کنید.');
+            return;
+        }
+
+        var btn = $(this);
+        var loader = $('#pillar-loader');
+        var resultContainer = $('#pillar-tree-result');
+
+        btn.prop('disabled', true);
+        loader.html('<div class="smart-ai-spinner"></div> در حال اسکن مقاله مادر و تولید خوشه‌ها و مشتقات کلمات کلیدی...').css('display', 'flex');
+        resultContainer.hide();
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_suggest_clusters',
+                security: smart_ai_params.nonce,
+                post_id: pillarId
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                loader.hide();
+                if (response.success) {
+                    var clusters = response.data.clusters;
+                    var html = '';
+
+                    // هدر پیلار
+                    html += '<div class="pillar-node">مقاله مادر منتخب: ' + $('#pillar_post_select option:selected').text() + '</div>';
+                    html += '<div class="cluster-nodes">';
+
+                    clusters.forEach(function(cluster, idx) {
+                        html += '<div class="cluster-node">';
+                        html += '<h5> خوشه پیشنهادی ' + (idx + 1) + ': ' + cluster.title + '</h5>';
+                        html += '<p><strong>کلمه کلیدی فرعی:</strong> ' + cluster.keyword + '</p>';
+                        html += '<button class="button button-small create-cluster-post-btn" data-title="' + cluster.title + '" data-keyword="' + cluster.keyword + '" data-pillar-id="' + pillarId + '">ایجاد این مقاله و لینک‌سازی خودکار</button>';
+                        html += '</div>';
+                    });
+
+                    html += '</div>';
+                    resultContainer.html(html).fadeIn();
+                } else {
+                    alert('خطا: ' + response.data.message);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                loader.hide();
+                alert('خطا در ارتباط با سرور.');
+            }
+        });
+    });
+
+    // ایجاد فوری کلاستر و لینک به پیلار
+    $(document).on('click', '.create-cluster-post-btn', function() {
+        var btn = $(this);
+        var title = btn.data('title');
+        var keyword = btn.data('keyword');
+        var pillarId = btn.data('pillar-id');
+
+        btn.prop('disabled', true).text('در حال ساخت محتوا...');
+
+        // ۱. ابتدا برای تولید محتوای کلاستر درخواست می‌دهیم
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_generate_new_post',
+                security: smart_ai_params.nonce,
+                keyword: keyword,
+                competitor_data: 'نگارش محتوای کلاستر مربوط به مقاله مادر شماره ' + pillarId
+            },
+            success: function(response) {
+                if (response.success) {
+                    var newPostId = response.data.post_id;
+
+                    // ۲. حالا لینک‌سازی متقابل را انجام می‌دهیم (کلاستر به پیلار با انکرتکست کلمه کلیدی)
+                    $.ajax({
+                        url: smart_ai_params.ajax_url,
+                        type: 'POST',
+                        data: {
+                            action: 'smart_ai_create_cluster_link',
+                            security: smart_ai_params.nonce,
+                            source_id: newPostId,
+                            target_id: pillarId,
+                            anchor: keyword
+                        },
+                        success: function(linkResponse) {
+                            btn.html('✔ لینک‌سازی شد!').removeClass('button-primary').css('background', '#46b450');
+                            alert('مقاله فرعی با موفقیت ایجاد شد، عکس‌ها دانلود شدند و لینک‌سازی متقابل به پیلار به اتم رسید!');
+                        }
+                    });
+                } else {
+                    btn.prop('disabled', false).text('تلاش مجدد');
+                    alert('خطا: ' + response.data.message);
+                }
+            }
+        });
+    });
+
+});
