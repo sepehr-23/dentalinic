@@ -83,6 +83,49 @@ jQuery(document).ready(function($) {
         });
     });
 
+    // دکمه اختصاصی تصویرساز جادویی
+    $('.generate-images-post').on('click', function() {
+        var btn = $(this);
+        var postId = btn.data('post-id');
+        var keywordInput = $('#keyword-' + postId);
+        var keyword = keywordInput.val();
+        var statusCell = $('#status-' + postId);
+
+        if (!keyword) {
+            alert('لطفاً ابتدا کلمه کلیدی را برای این مقاله وارد کنید تا عکس‌ها مرتبط با آن باشند.');
+            keywordInput.focus();
+            return;
+        }
+
+        btn.prop('disabled', true);
+        statusCell.html('<div class="smart-ai-spinner"></div> در حال تولید و چیدمان تصاویر بدون نوشته...');
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_generate_images_for_post',
+                security: smart_ai_params.nonce,
+                post_id: postId,
+                keyword: keyword
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                if (response.success) {
+                    statusCell.html('<span style="color: green; font-weight: bold;">✔ تصاویر و شاخص ست شدند!</span>');
+                    alert(response.data.message);
+                } else {
+                    statusCell.html('<span style="color: red;">❌ خطا در ایجاد تصاویر</span>');
+                    alert('خطا: ' + response.data.message);
+                }
+            },
+            error: function() {
+                btn.prop('disabled', false);
+                statusCell.html('<span style="color: red;">❌ خطای سرور در دانلود عکس</span>');
+            }
+        });
+    });
+
     // مرحله اول: تحلیل و جستجوی رقبای گوگل
     $('#analyze-competitors-btn').on('click', function() {
         var keyword = $('#writer_keyword').val();

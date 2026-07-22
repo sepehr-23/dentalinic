@@ -53,13 +53,14 @@ $posts_query = new WP_Query( $args );
                             <td><strong><a href="<?php echo get_edit_post_link( $post_id ); ?>" target="_blank"><?php the_title(); ?></a></strong></td>
                             <td><?php echo ( get_post_status() === 'publish' ) ? '<span style="color: green;">✔ منتشر شده</span>' : '<span style="color: orange;">پیش‌نویس</span>'; ?></td>
                             <td>
-                                <input type="text" id="keyword-<?php echo $post_id; ?>" class="regular-text" style="width: 90%;" value="<?php echo esc_attr( $keyword ); ?>" placeholder="مثال: آموزش قهوه اسپرسو..." />
+                                <input type="text" id="keyword-<?php echo $post_id; ?>" class="regular-text" style="width: 90%;" value="<?php echo esc_attr( $keyword ); ?>" placeholder="مثال: خرید آسانسور کارگاهی" />
                             </td>
                             <td id="status-<?php echo $post_id; ?>">
                                 <span style="color: #666;">⏳ در انتظار بهینه‌سازی</span>
                             </td>
                             <td>
-                                <button class="button button-primary optimize-single-post" data-post-id="<?php echo $post_id; ?>">✨ ویرایش جادویی</button>
+                                <button class="button button-primary optimize-single-post" data-post-id="<?php echo $post_id; ?>" style="width: 100%;">✨ ویرایش جادویی</button>
+                                <button class="button button-secondary generate-images-post" data-post-id="<?php echo $post_id; ?>" style="margin-top: 6px; display: block; width: 100%; color: #440047; border-color: #440047;">📸 تصویرساز جادویی</button>
                             </td>
                         </tr>
                     <?php endwhile; wp_reset_postdata(); ?>

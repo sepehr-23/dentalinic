@@ -18,6 +18,7 @@ class WPSmartAI_Admin_Panel {
         // ثبت هندلرهای AJAX
         add_action( 'wp_ajax_smart_ai_save_settings', array( $this, 'ajax_save_settings' ) );
         add_action( 'wp_ajax_smart_ai_optimize_post', array( $this, 'ajax_optimize_post' ) );
+        add_action( 'wp_ajax_smart_ai_generate_images_for_post', array( $this, 'ajax_generate_images_for_post' ) );
         add_action( 'wp_ajax_smart_ai_analyze_competitors', array( $this, 'ajax_analyze_competitors' ) );
         add_action( 'wp_ajax_smart_ai_generate_new_post', array( $this, 'ajax_generate_new_post' ) );
         add_action( 'wp_ajax_smart_ai_suggest_clusters', array( $this, 'ajax_suggest_clusters' ) );
@@ -166,6 +167,40 @@ class WPSmartAI_Admin_Panel {
         wp_send_json_success( array(
             'message' => 'مقاله با موفقیت بهینه‌سازی و تبدیل به قالب المنتور شد، تمام تیک‌های سئو سبز شدند!',
             'meta'    => $meta_data
+        ) );
+    }
+
+    /**
+     * تصویرساز جادویی: دانلود ۳ تصویر مرتبط، جایگذاری منظم در متن و تخصیص تصویر شاخص
+     */
+    public function ajax_generate_images_for_post() {
+        check_ajax_referer( 'smart_ai_nonce', 'security' );
+        $post_id = intval( $_POST['post_id'] );
+        $keyword = sanitize_text_field( $_POST['keyword'] );
+
+        if ( ! $post_id || empty( $keyword ) ) {
+            wp_send_json_error( array( 'message' => 'اطلاعات ارسالی نامعتبر است.' ) );
+        }
+
+        $post = get_post( $post_id );
+        if ( ! $post ) {
+            wp_send_json_error( array( 'message' => 'مقاله یافت نشد.' ) );
+        }
+
+        // درج تصاویر و تصویر شاخص و آلت تگ‌ها
+        $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $post->post_content, $post_id );
+
+        // بروزرسانی قالب المنتور به همراه عکس‌های جدید اضافه شده
+        WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
+
+        // آپدیت متن اصلی وردپرس
+        wp_update_post( array(
+            'ID'           => $post_id,
+            'post_content' => $final_content
+        ) );
+
+        wp_send_json_success( array(
+            'message' => '۳ تصویر فوق‌العاده سئوشده بدون نوشته دانلود و در متن چیده شدند و تصویر شاخص نیز با موفقیت ست شد!'
         ) );
     }
 
