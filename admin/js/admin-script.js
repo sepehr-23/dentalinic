@@ -86,7 +86,7 @@ jQuery(document).ready(function($) {
         });
     });
 
-    // دکمه اختصاصی تصویرساز جادویی
+    // دکمه اختصاصی تصویرساز جادویی ۳‌تایی
     $('.generate-images-post').on('click', function() {
         var btn = $(this);
         var postId = btn.data('post-id');
@@ -130,6 +130,137 @@ jQuery(document).ready(function($) {
                 statusCell.html('<span style="color: red;">❌ خطای سرور در دانلود عکس</span>');
                 console.error('Smart AI SEO - AJAX Failure inside Image Maker:', xhr, status, error);
                 alert('خطای اتصال به سرور رخ داد! ممکن است به دلیل لودینگ طولانی یا عدم تنظیم کلید API در پیشخوان باشد. لطفا کنسول (F12) یا فایل error_log هاست را بررسی نمایید.');
+            }
+        });
+    });
+
+    // باز و بسته کردن منوی کشویی مدیریت تصاویر تکی
+    $('.toggle-image-manager').on('click', function(e) {
+        e.preventDefault();
+        var postId = $(this).data('post-id');
+        $('#image-manager-row-' + postId).slideToggle(250);
+    });
+
+    // لود تکی تصاویر گالری مقاله
+    $('.load-post-images').on('click', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var postId = btn.data('post-id');
+        var spinner = $('#gallery-loader-' + postId);
+        var galleryGrid = $('#image-manager-gallery-' + postId);
+        var consoleBox = $('#image-console-' + postId);
+
+        btn.prop('disabled', true);
+        spinner.show();
+        galleryGrid.html('');
+        consoleBox.hide().html('');
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_get_post_images_list',
+                security: smart_ai_params.nonce,
+                post_id: postId
+            },
+            success: function(response) {
+                btn.prop('disabled', false);
+                spinner.hide();
+                if (response.success) {
+                    var images = response.data.images;
+                    if (images.length === 0) {
+                        galleryGrid.html('<p style="grid-column: 1/-1; color: #666; text-align: center;">هیچ تصویری در این مقاله ثبت نشده است. ابتدا روی دکمه تصویرساز جادویی کلیک کنید.</p>');
+                        return;
+                    }
+
+                    var html = '';
+                    images.forEach(function(img) {
+                        var cardTitle = img.type === 'featured' ? '📌 تصویر شاخص مقاله' : '🖼️ تصویر داخل متن شماره ' + img.index;
+                        var imgUrl = img.url ? img.url : 'https://placehold.co/600x400/222/fff?text=No+Image+Loaded';
+
+                        html += '<div class="wp-smart-ai-card" style="margin-bottom:0; display: flex; flex-direction: column; gap: 10px; border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fff;" id="image-card-' + img.id + '">';
+                        html += '<h5 style="margin: 0 0 5px 0; color: #440047; font-weight: bold;">' + cardTitle + '</h5>';
+                        html += '<img src="' + imgUrl + '" style="width: 100%; height: 140px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;" />';
+                        html += '<div style="font-size: 11px; color: #666;"><strong>شناسه ضمیمه:</strong> ' + img.id + '</div>';
+
+                        // فیلدهای تعویض جادویی
+                        html += '<div style="margin-top: 5px;">';
+                        html += '<label style="font-size: 11px; font-weight: bold; display:block; margin-bottom:4px;">کلمه انگلیسی جستجوی تصویر جدید:</label>';
+                        html += '<input type="text" class="new-query-input" value="" style="font-size:12px; width:100%; margin-bottom:8px;" placeholder="مثال: luxury building elevator design" />';
+
+                        html += '<label style="font-size: 11px; font-weight: bold; display:block; margin-bottom:4px;">متن Alt تصویر جدید (فارسی):</label>';
+                        html += '<input type="text" class="new-alt-input" value="' + img.alt + '" style="font-size:12px; width:100%; margin-bottom:8px;" />';
+                        html += '</div>';
+
+                        html += '<button class="button button-secondary replace-image-btn" data-post-id="' + postId + '" data-old-id="' + img.id + '" style="margin-top:5px; width:100%; font-weight: bold; color: #440047; border-color: #440047;">🔁 جایگزینی جادویی عکس</button>';
+                        html += '</div>';
+                    });
+
+                    galleryGrid.html(html);
+                } else {
+                    consoleBox.html('خطا در بارگذاری تصاویر: ' + response.data.message).show();
+                    console.error('Smart AI SEO - Load gallery error:', response);
+                }
+            },
+            error: function(xhr, status, error) {
+                btn.prop('disabled', false);
+                spinner.hide();
+                consoleBox.html('خطای اتصال به سرور: ' + error).show();
+                console.error('Smart AI SEO - Load gallery AJAX error:', xhr, status, error);
+            }
+        });
+    });
+
+    // جایگزینی جادویی و تکی یک عکس خاص و حذف عکس قدیمی از هاست
+    $(document).on('click', '.replace-image-btn', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var card = btn.closest('.wp-smart-ai-card');
+        var postId = btn.data('post-id');
+        var oldId = btn.data('old-id');
+        var query = card.find('.new-query-input').val();
+        var alt = card.find('.new-alt-input').val();
+        var consoleBox = $('#image-console-' + postId);
+
+        if (!query) {
+            alert('لطفاً کلمه کلیدی انگلیسی برای جستجوی تصویر جدید در Unsplash را وارد کنید.');
+            card.find('.new-query-input').focus();
+            return;
+        }
+
+        btn.prop('disabled', true).text('در حال تعویض و حذف فایل قبلی...');
+        consoleBox.hide().html('');
+
+        console.log('Smart AI SEO - Triggering specific replacement for attachment ID:', oldId, 'with new query:', query);
+
+        $.ajax({
+            url: smart_ai_params.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'smart_ai_replace_specific_image',
+                security: smart_ai_params.nonce,
+                post_id: postId,
+                old_id: oldId,
+                query: query,
+                alt: alt
+            },
+            success: function(response) {
+                btn.prop('disabled', false).text('🔁 جایگزینی جادویی عکس');
+                if (response.success) {
+                    alert(response.data.message);
+                    // بروزرسانی آنی کارت تصویر با آدرس عکس جدید
+                    card.find('img').attr('src', response.data.new_url);
+                    btn.data('old-id', response.data.new_id);
+                    card.find('.new-query-input').val('');
+                } else {
+                    consoleBox.html('خطا در جایگزینی تصویر: ' + response.data.message).show();
+                    console.error('Smart AI SEO - Image replace API error:', response);
+                }
+            },
+            error: function(xhr, status, error) {
+                btn.prop('disabled', false).text('🔁 جایگزینی جادویی عکس');
+                consoleBox.html('خطای اتصال سرور در تعویض تصویر: ' + error).show();
+                console.error('Smart AI SEO - Image replace AJAX error:', xhr, status, error);
             }
         });
     });

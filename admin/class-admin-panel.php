@@ -19,6 +19,8 @@ class WPSmartAI_Admin_Panel {
         add_action( 'wp_ajax_smart_ai_save_settings', array( $this, 'ajax_save_settings' ) );
         add_action( 'wp_ajax_smart_ai_optimize_post', array( $this, 'ajax_optimize_post' ) );
         add_action( 'wp_ajax_smart_ai_generate_images_for_post', array( $this, 'ajax_generate_images_for_post' ) );
+        add_action( 'wp_ajax_smart_ai_get_post_images_list', array( $this, 'ajax_get_post_images_list' ) );
+        add_action( 'wp_ajax_smart_ai_replace_specific_image', array( $this, 'ajax_replace_specific_image' ) );
         add_action( 'wp_ajax_smart_ai_analyze_competitors', array( $this, 'ajax_analyze_competitors' ) );
         add_action( 'wp_ajax_smart_ai_generate_new_post', array( $this, 'ajax_generate_new_post' ) );
         add_action( 'wp_ajax_smart_ai_suggest_clusters', array( $this, 'ajax_suggest_clusters' ) );
@@ -146,26 +148,20 @@ class WPSmartAI_Admin_Panel {
         $settings = get_option( 'wp_smart_ai_seo_settings', array() );
         $tone = isset( $settings['tone'] ) ? $settings['tone'] : 'friendly';
 
-        // ذخیره موقت کلمه کلیدی در فیلدهای سئو
         WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده با هوش مصنوعی' );
 
-        // ۱. تولید محتوای بهینه‌شده به همراه کدهای تصویری <!-- PLACE_IMAGE: ... -->
         $optimized_text = WPSmartAI_Engine::generate_optimized_content( $post->post_content, $keyword, $tone );
         if ( is_wp_error( $optimized_text ) ) {
             wp_send_json_error( array( 'message' => $optimized_text->get_error_message() ) );
         }
 
-        // ۲. دانلود و درج تصاویر هوشمند با تگ Alt خودکار به جای تگ‌های موقت تصویر و تخصیص تصویر شاخص
         $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $optimized_text, $post_id );
 
-        // ۳. ساخت متادیتای سئو و تغییر آن‌ها در افزونه‌های Rank Math / Yoast
         $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
         WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
-        // ۴. تبدیل و ساختاربندی به قالب پیشرفته المنتور (Elementor Layout JSON) بر اساس قالب ارسالی شما
         WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
-        // ۵. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس با حفظ وضعیت انتشار
         wp_update_post( array(
             'ID'           => $post_id,
             'post_content' => $final_content,
@@ -200,21 +196,17 @@ class WPSmartAI_Admin_Panel {
             $post_status = 'publish';
         }
 
-        // همگام سازی کلمه کلیدی در فیلدهای سئو
-        WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده به همراه عکس شاخص و عکس های گالری' );
+        WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده به همراه عکس شاخص' );
 
         try {
-            // درج تصاویر و تصویر شاخص و آلت تگ‌ها
             $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $post->post_content, $post_id );
 
             if ( is_wp_error( $final_content ) ) {
                 wp_send_json_error( array( 'message' => $final_content->get_error_message() ) );
             }
 
-            // بروزرسانی قالب المنتور به همراه عکس‌های جدید اضافه شده
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
-            // آپدیت متن اصلی وردپرس با حفظ استاتوس انتشار مقاله
             wp_update_post( array(
                 'ID'           => $post_id,
                 'post_content' => $final_content,
@@ -228,6 +220,68 @@ class WPSmartAI_Admin_Panel {
         } catch (Exception $e) {
             wp_send_json_error( array( 'message' => 'خطایی در اجرای تصویرسازی رخ داد: ' . $e->getMessage() ) );
         }
+    }
+
+    /**
+     * دریافت لیست گالری تصاویر برای مدیریت اختصاصی هر عکس به تفکیک
+     */
+    public function ajax_get_post_images_list() {
+        check_ajax_referer( 'smart_ai_nonce', 'security' );
+        $post_id = intval( $_POST['post_id'] );
+
+        if ( ! $post_id ) {
+            wp_send_json_error( array( 'message' => 'شناسه مقاله نامعتبر است.' ) );
+        }
+
+        $images = WPSmartAI_Image_Handler::get_post_images_list( $post_id );
+        wp_send_json_success( array( 'images' => $images ) );
+    }
+
+    /**
+     * جایگزینی فوری عکس و حذف کامل عکس قدیمی از رسانه وردپرس
+     */
+    public function ajax_replace_specific_image() {
+        check_ajax_referer( 'smart_ai_nonce', 'security' );
+        $post_id = intval( $_POST['post_id'] );
+        $old_id  = intval( $_POST['old_id'] );
+        $query   = sanitize_text_field( $_POST['query'] );
+        $alt     = sanitize_text_field( $_POST['alt'] );
+
+        if ( ! $post_id || empty( $query ) || empty( $alt ) ) {
+            wp_send_json_error( array( 'message' => 'اطلاعات ارسالی برای جایگزینی تصویر ناقص است.' ) );
+        }
+
+        $post = get_post( $post_id );
+        if ( ! $post ) {
+            wp_send_json_error( array( 'message' => 'مقاله یافت نشد.' ) );
+        }
+
+        $post_status = get_post_status( $post_id );
+        if ( ! $post_status ) {
+            $post_status = 'publish';
+        }
+
+        $result = WPSmartAI_Image_Handler::replace_specific_image( $post_id, $old_id, $query, $alt );
+
+        if ( is_wp_error( $result ) ) {
+            wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+        }
+
+        // بروزرسانی قالب المنتور پس از تعویض عکس
+        WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $result['content'] );
+
+        // بروزرسانی پست در دیتابیس
+        wp_update_post( array(
+            'ID'           => $post_id,
+            'post_content' => $result['content'],
+            'post_status'  => $post_status
+        ) );
+
+        wp_send_json_success( array(
+            'message'  => 'تصویر جدید جایگزین گردید و تصویر قبلی به طور کامل از رسانه وردپرس حذف شد!',
+            'new_url'  => $result['new_url'],
+            'new_id'   => $result['new_id']
+        ) );
     }
 
     public function ajax_analyze_competitors() {
