@@ -24,11 +24,11 @@ $tone         = isset( $settings['tone'] ) ? $settings['tone'] : 'friendly';
     </div>
 
     <div class="wp-smart-ai-card">
-        <h3>🔑 تنظیمات اتصال به هوش مصنوعی و رسانه</h3>
+        <h3>🔑 تنظیمات اتصال به هوش مصنوعی و تصویرساز جادویی</h3>
         <form id="smart-ai-settings-form">
 
             <div class="wp-smart-ai-field-group">
-                <label for="api_provider">ارائه‌دهنده هوش مصنوعی:</label>
+                <label for="api_provider">ارائه‌دهنده هوش مصنوعی (برای نگارش متن):</label>
                 <select id="api_provider" name="api_provider">
                     <option value="gemini" <?php selected( $api_provider, 'gemini' ); ?>>Google Gemini (فوق‌العاده سریع و رایگان با پشتیبانی عالی فارسی)</option>
                     <option value="groq" <?php selected( $api_provider, 'groq' ); ?>>Groq Cloud (مدل‌های متن‌باز رایگان)</option>
@@ -37,18 +37,17 @@ $tone         = isset( $settings['tone'] ) ? $settings['tone'] : 'friendly';
             </div>
 
             <div class="wp-smart-ai-field-group">
-                <label for="api_key">کلید API ارائه‌دهنده هوش مصنوعی:</label>
+                <label for="api_key">کلید API ارائه‌دهنده هوش مصنوعی جمینی:</label>
                 <input type="password" id="api_key" name="api_key" value="<?php echo esc_attr( $api_key ); ?>" placeholder="کلید API مربوطه را وارد کنید..." />
-                <p class="description">برای تولید کلید رایگان جمینی به <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a> مراجعه کنید.</p>
+                <p class="description">برای تولید کلید ۱۰۰٪ رایگان جمینی به <a href="https://aistudio.google.com/" style="font-weight: bold; color: #440047;" target="_blank">Google AI Studio</a> مراجعه کرده و دکمه Get API Key را بزنید.</p>
             </div>
 
-            <div class="wp-smart-ai-field-group">
-                <label for="unsplash_key">کلید API رسانه Unsplash (اختیاری):</label>
-                <input type="password" id="unsplash_key" name="unsplash_key" value="<?php echo esc_attr( $unsplash_key ); ?>" placeholder="کلید Unsplash Developer API..." />
-                <p class="description">جهت دانلود خودکار عکس‌های کاملاً اختصاصی و مرتبط. در صورت خالی بودن، از کتابخانه همگانی به صورت عمومی استفاده خواهد شد.</p>
+            <div class="wp-smart-ai-field-group" style="padding: 15px; background: #efe5f0; border-right: 4px solid #440047; border-radius: 4px; max-width: 600px;">
+                <h4 style="margin: 0 0 10px 0; color: #440047;">🎨 تصویرساز جادویی هوش مصنوعی (پیش‌فرض فعال):</h4>
+                <p style="margin:0; font-size:13px; line-height: 1.8; color: #333;">بخش تصویرسازی افزونه به موتور قدرتمند و رایگان **Pollinations AI** مجهز گردید. این موتور بر اساس مدل‌های تصویرساز پیشرفته **Flux** و **Stable Diffusion** عکس‌های باکیفیت و بدون متن تولید می‌کند و **نیاز به هیچگونه کلید API یا هزینه ندارد**.</p>
             </div>
 
-            <div class="wp-smart-ai-field-group">
+            <div class="wp-smart-ai-field-group" style="margin-top: 20px;">
                 <label for="tone">لحن تولید محتوا (سئو کلاه سفید فارسی):</label>
                 <select id="tone" name="tone">
                     <option value="friendly" <?php selected( $tone, 'friendly' ); ?>>دوستانه و صمیمی (مناسب بلاگ شخصی و فروشگاهی)</option>

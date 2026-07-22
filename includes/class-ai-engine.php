@@ -69,23 +69,32 @@ class WPSmartAI_Engine {
     }
 
     /**
-     * ترجمه و تولید ۳ کلمه کلیدی انگلیسی برای سرچ فوق دقیق در Unsplash
+     * ترجمه و تولید ۳ کلمه کلیدی پرومپت انگلیسی فوق حرفه‌ای مخصوص موتورهای تصویرساز هوش مصنوعی (FLUX / Stable Diffusion)
      */
     public static function translate_keyword_to_english( $keyword ) {
-        $prompt = "تو یک مترجم و کارشناس تصویر هستی. کلمه کلیدی فارسی زیر مربوط به صنعت آسانسور، پله برقی و بالابر است:
+        $prompt = "تو یک مهندس پرومپت هوش مصنوعی تصویرساز هستی. کلمه کلیدی فارسی زیر مربوط به صنعت آسانسور، پله برقی و بالابر است:
 '{$keyword}'
 
-وظیفه تو تولید ۳ کلمه کلیدی انگلیسی بسیار دقیق، کوتاه و توصیفی برای جستجو در سایت Unsplash است تا مرتبط‌ترین عکس‌ها (ترجیحاً واقعی و بدون هیچ نوشته‌ای روی عکس) پیدا شوند.
+وظیفه تو تولید ۳ پرومپت انگلیسی خیره‌کننده، بسیار دقیق، کوتاه و توصیفی مخصوص مدل‌های تصویرساز هوش مصنوعی (مانند Stable Diffusion و FLUX) است.
+پرومپت‌ها باید به گونه‌ای طراحی شوند که:
+۱. کاملاً واقعی و فوتورئالیستی باشند (photorealistic, 8k resolution, cinematic lighting).
+۲. در پایان هر پرومپت حتماً عبارات منفی جهت عدم درج هیچگونه متن یا نوشته روی تصویر قرار گیرد: 'realistic photo, professional architecture photography, no text, no words, no letters, no watermark'.
+۳. تصاویر باید کاملاً مرتبط با قطعات آسانسور، دکوراسیون کابین، شفت یا لابی ساختمان باشند.
+
 خروجی را دقیقاً در قالب فرمت JSON زیر برگردان و هیچ متن اضافه دیگری ننویس:
 [
-  \"کلمه کلیدی اول به انگلیسی\",
-  \"کلمه کلیدی دوم به انگلیسی\",
-  \"کلمه کلیدی سوم به انگلیسی\"
+  \"پرومپت تصویر اول مخصوص هوش مصنوعی به انگلیسی\",
+  \"پرومپت تصویر دوم مخصوص هوش مصنوعی به انگلیسی\",
+  \"پرومپت تصویر سوم مخصوص هوش مصنوعی به انگلیسی\"
 ]";
 
         $response = self::call_gemini( $prompt );
         if ( is_wp_error( $response ) ) {
-            return array( 'elevator', 'lift architecture', 'elevator motor' );
+            return array(
+                'photorealistic high resolution modern luxury glass elevator cabin, steel and glass interior, cinematic lighting, realistic architecture photography, no text, no words, no letters',
+                'photorealistic professional close-up of elevator traction machine steel motor engine details, no text, no words, no letters',
+                'photorealistic wide angle luxury building lobby with modern glass escalators and high ceilings, no text, no words, no letters'
+            );
         }
 
         $clean_json = preg_replace( '/```json|```/', '', $response );
@@ -96,7 +105,11 @@ class WPSmartAI_Engine {
             return array_map( 'sanitize_text_field', $data );
         }
 
-        return array( 'elevator', 'lift architecture', 'elevator motor' );
+        return array(
+            'photorealistic high resolution modern luxury glass elevator cabin, steel and glass interior, cinematic lighting, realistic architecture photography, no text, no words, no letters',
+            'photorealistic professional close-up of elevator traction machine steel motor engine details, no text, no words, no letters',
+            'photorealistic wide angle luxury building lobby with modern glass escalators and high ceilings, no text, no words, no letters'
+        );
     }
 
     /**
@@ -113,7 +126,7 @@ class WPSmartAI_Engine {
         // آدرس‌های ثابت و واقعی سایت جهت لینک‌دهی دقیق
         $call_link = 'https://keshavarzlift.ir/#call';
         $shop_link = 'https://keshavarzlift.ir/shop/';
-        $articles_link = 'https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%8ال%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/';
+        $articles_link = 'https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%84%d8%a7%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/';
         $order_link = 'https://keshavarzlift.ir/%D9%81%D8%B1%D9%85%20%D8%B3%D9%81%D8%A7%D8%B1%D8%B4/';
 
         $prompt = "تو یک کارشناس فوق‌العاده ارشد سئو و طراح فرانت‌اند حرفه‌ای هستی. وظیفه تو نوشتن یک مقاله فوق‌العاده خیره‌کننده، سئوشده و جذاب درباره موضوع و کلمه کلیدی اصلی '{$keyword}' است.

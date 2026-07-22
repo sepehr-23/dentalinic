@@ -1,6 +1,6 @@
 <?php
 /**
- * کلاس دریافت تصاویر از Unsplash و مدیریت جراحی/جایگزینی گالری مقالات و تصویر شاخص
+ * کلاس دریافت تصاویر جادویی از هوش مصنوعی تصویرساز رایگان (Pollinations AI) و مدیریت گالری مقالات و تصویر شاخص
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,50 +10,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WPSmartAI_Image_Handler {
 
     /**
-     * پیدا کردن تصویر در Unsplash، دانلود و پیوست کردن آن به رسانه وردپرس
+     * تولید عکس جادویی با هوش مصنوعی Pollinations AI (Flux / Stable Diffusion) به صورت ۱۰۰٪ رایگان و بدون نیاز به کلید
      */
     public static function fetch_and_upload_image( $query, $post_id = 0, $alt_text = '' ) {
-        $settings = get_option( 'wp_smart_ai_seo_settings', array() );
-        $unsplash_key = isset( $settings['unsplash_key'] ) ? $settings['unsplash_key'] : '';
-
         // تمیز کردن کوئری
         $query = trim( $query );
         $clean_query = str_replace( array('no text', 'without text', 'text-free'), '', $query );
 
-        // افزایش چگالی کلمات کلیدی برای دریافت نتایج خیره‌کننده بدون متن روی تصویر
-        $search_query = $clean_query . ' photorealistic interior design realistic construction no text';
+        // ساخت پرومپت غنی شده و تمیز برای هوش مصنوعی تصویرساز
+        $search_query = $clean_query . ' photorealistic 8k, highly detailed, realistic architecture photography, architectural, depth of field, no text, no words, no letters, no watermark';
 
-        error_log("Smart AI SEO - Searching Unsplash for: " . $search_query);
+        error_log("Smart AI SEO - Generating AI Image with prompt: " . $search_query);
 
-        $image_url = '';
-        if ( ! empty( $unsplash_key ) ) {
-            $api_url = 'https://api.unsplash.com/photos/random?query=' . urlencode( $search_query ) . '&client_id=' . $unsplash_key;
-            $response = wp_remote_get( $api_url );
-            if ( ! is_wp_error( $response ) ) {
-                $body = json_decode( wp_remote_retrieve_body( $response ), true );
-                if ( isset( $body['urls']['regular'] ) ) {
-                    $image_url = $body['urls']['regular'];
-                }
-            } else {
-                error_log("Smart AI SEO - Unsplash API Error: " . $response->get_error_message());
-            }
-        }
+        // استفاده از API فوق‌العاده سریع و ۱۰۰٪ رایگان Pollinations AI برای تولید تصویر Flux
+        $image_url = 'https://image.pollinations.ai/prompt/' . rawurlencode( $search_query ) . '?width=1024&height=768&nologo=true&private=true&enhance=false&seed=' . rand(1000, 9999);
 
-        if ( empty( $image_url ) ) {
-            $elevator_photos = array(
-                'photo-1605647540924-852290f6b0d5',
-                'photo-1517649763962-0c623066013b',
-                'photo-1581094288338-2314dddb7eed',
-                'photo-1541888946425-d81bb19240f5',
-                'photo-1504307651254-35680f356dfd',
-                'photo-1486406146926-c627a92ad1ab',
-                'photo-1497366216548-37526070297c'
-            );
-            $selected_photo = $elevator_photos[ array_rand( $elevator_photos ) ];
-            $image_url = 'https://images.unsplash.com/' . $selected_photo . '?auto=format&fit=crop&w=1200&q=80';
-        }
-
-        error_log("Smart AI SEO - Downloading image from URL: " . $image_url);
+        error_log("Smart AI SEO - Downloading AI generated image from URL: " . $image_url);
 
         // دانلود تصویر به پوشه آپلودهای وردپرس
         require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -62,17 +34,19 @@ class WPSmartAI_Image_Handler {
 
         $tmp = download_url( $image_url );
         if ( is_wp_error( $tmp ) ) {
+            error_log("Smart AI SEO - AI image download failed: " . $tmp->get_error_message());
             return $tmp;
         }
 
         $file_array = array(
-            'name'     => sanitize_title( $clean_query ) . '-' . rand(100, 999) . '.jpg',
+            'name'     => sanitize_title( $clean_query ) . '-ai-' . rand(100, 999) . '.jpg',
             'tmp_name' => $tmp
         );
 
         $id = media_handle_sideload( $file_array, $post_id, $alt_text );
 
         if ( is_wp_error( $id ) ) {
+            error_log("Smart AI SEO - AI media sideload failed: " . $id->get_error_message());
             @unlink( $file_array['tmp_name'] );
             return $id;
         }
@@ -81,6 +55,7 @@ class WPSmartAI_Image_Handler {
             update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $alt_text ) );
         }
 
+        error_log("Smart AI SEO - AI Image generated and uploaded successfully with ID: " . $id);
         return $id;
     }
 
@@ -104,6 +79,8 @@ class WPSmartAI_Image_Handler {
             if ( empty( $keyword ) ) {
                 $keyword = get_the_title( $post_id );
             }
+
+            error_log("Smart AI SEO - Injected AI images on demand for keyword: " . $keyword);
 
             // ترجمه کلمه کلیدی به انگلیسی از طریق جمینی
             $queries = WPSmartAI_Engine::translate_keyword_to_english( $keyword );
