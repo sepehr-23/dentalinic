@@ -53,6 +53,8 @@ class WPSmartAI_Image_Handler {
             $image_url = 'https://images.unsplash.com/' . $selected_photo . '?auto=format&fit=crop&w=1200&q=80';
         }
 
+        error_log("Smart AI SEO - Downloading image from URL: " . $image_url);
+
         // دانلود تصویر به پوشه آپلودهای وردپرس
         require_once ABSPATH . 'wp-admin/includes/image.php';
         require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -86,6 +88,10 @@ class WPSmartAI_Image_Handler {
      * جایگزینی تگ‌های <!-- PLACE_IMAGE: ... --> با تگ‌های واقعی عکس در متن مقاله و تخصیص تصویر شاخص
      */
     public static function insert_images_into_content( $content, $post_id = 0 ) {
+        if ( is_wp_error( $content ) ) {
+            return $content;
+        }
+
         // الگو برای استخراج درخواست تصویر به فرمت: <!-- PLACE_IMAGE: query | alt -->
         preg_match_all( '/<!--\s*PLACE_IMAGE:\s*(.*?)\s*-->/', $content, $matches );
 
@@ -101,6 +107,9 @@ class WPSmartAI_Image_Handler {
 
             // ترجمه کلمه کلیدی به انگلیسی از طریق جمینی
             $queries = WPSmartAI_Engine::translate_keyword_to_english( $keyword );
+            if ( is_wp_error( $queries ) ) {
+                $queries = array( 'elevator cabin', 'elevator motor', 'escalator' );
+            }
 
             $default_queries = array(
                 $queries[0] . ' luxury lift cabin',
@@ -274,7 +283,7 @@ class WPSmartAI_Image_Handler {
 
         // ۱. بررسی اگر عکس قدیمی تصویر شاخص بوده است
         $thumbnail_id = get_post_thumbnail_id( $post_id );
-        if ( intval( $old_attachment_id ) === intval( $thumbnail_id ) ) {
+        if ( intval( $old_attachment_id ) === intval( $thumbnail_id ) || intval( $old_attachment_id ) === 0 ) {
             set_post_thumbnail( $post_id, $new_attachment_id );
         }
 

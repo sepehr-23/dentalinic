@@ -113,8 +113,8 @@ class WPSmartAI_Engine {
         // آدرس‌های ثابت و واقعی سایت جهت لینک‌دهی دقیق
         $call_link = 'https://keshavarzlift.ir/#call';
         $shop_link = 'https://keshavarzlift.ir/shop/';
-        $articles_link = 'https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%84%d8%a7%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/';
-        $order_link = 'https://keshavarzlift.ir/%D9%81%D8%B1%D9%85%20%D8%B3%D9%8ف%D8%A7%D8%B1%D8%B4/';
+        $articles_link = 'https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%8ال%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/';
+        $order_link = 'https://keshavarzlift.ir/%D9%81%D8%B1%D9%85%20%D8%B3%D9%81%D8%A7%D8%B1%D8%B4/';
 
         $prompt = "تو یک کارشناس فوق‌العاده ارشد سئو و طراح فرانت‌اند حرفه‌ای هستی. وظیفه تو نوشتن یک مقاله فوق‌العاده خیره‌کننده، سئوشده و جذاب درباره موضوع و کلمه کلیدی اصلی '{$keyword}' است.
 

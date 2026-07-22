@@ -26,7 +26,6 @@ define( 'WP_SMART_AI_SEO_URL', plugin_dir_url( __FILE__ ) );
  */
 register_activation_hook( __FILE__, 'wp_smart_ai_seo_activate' );
 function wp_smart_ai_seo_activate() {
-    // ایجاد ساختار دیتابیس در صورت نیاز یا ذخیره تنظیمات پیش‌فرض
     if ( ! get_option( 'wp_smart_ai_seo_settings' ) ) {
         update_option( 'wp_smart_ai_seo_settings', array(
             'api_provider' => 'gemini',
@@ -57,7 +56,6 @@ function wp_smart_ai_seo_init() {
     // لود کردن پنل مدیریت
     if ( is_admin() ) {
         require_once WP_SMART_AI_SEO_PATH . 'admin/class-admin-panel.php';
-        // نمونه‌سازی کنترلر ادمین
         new WPSmartAI_Admin_Panel();
     }
 }

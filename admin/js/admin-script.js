@@ -15,6 +15,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000, // ۵ دقیقه تایم‌اوت
             data: {
                 action: 'smart_ai_save_settings',
                 security: smart_ai_params.nonce,
@@ -32,10 +33,11 @@ jQuery(document).ready(function($) {
                     resultBox.addClass('error').html(response.data.message).fadeIn();
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 loader.hide();
                 submitBtn.prop('disabled', false);
-                resultBox.addClass('error').html('خطایی در ارتباط با سرور رخ داد.').fadeIn();
+                resultBox.addClass('error').html('خطایی در ارتباط با سرور رخ داد: ' + error).fadeIn();
+                console.error('Smart AI SEO - Save settings failure:', xhr, status, error);
             }
         });
     });
@@ -60,6 +62,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000, // ۵ دقیقه تایم‌اوت
             data: {
                 action: 'smart_ai_optimize_post',
                 security: smart_ai_params.nonce,
@@ -81,7 +84,7 @@ jQuery(document).ready(function($) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای ارتباطی</span>');
                 console.error('Smart AI SEO - AJAX error:', xhr, status, error);
-                alert('خطای سرور رخ داد. لطفا کنسول مرورگر (F12) یا گزارش خطاهای سرور را چک کنید.');
+                alert('خطای سرور رخ داد. لطفا کنسول مرورگر (F12) یا گزارش خطاهای سرور را چک کنید. جزئیات: ' + error);
             }
         });
     });
@@ -108,6 +111,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000, // ۵ دقیقه تایم‌اوت
             data: {
                 action: 'smart_ai_generate_images_for_post',
                 security: smart_ai_params.nonce,
@@ -129,7 +133,7 @@ jQuery(document).ready(function($) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای سرور در دانلود عکس</span>');
                 console.error('Smart AI SEO - AJAX Failure inside Image Maker:', xhr, status, error);
-                alert('خطای اتصال به سرور رخ داد! ممکن است به دلیل لودینگ طولانی یا عدم تنظیم کلید API در پیشخوان باشد. لطفا کنسول (F12) یا فایل error_log هاست را بررسی نمایید.');
+                alert('خطای اتصال به سرور رخ داد! ممکن است به دلیل لودینگ طولانی یا عدم تنظیم کلید API در پیشخوان باشد. لطفا کنسول (F12) یا فایل error_log هاست را بررسی نمایید. جزئیات خطای شبکه: ' + error);
             }
         });
     });
@@ -158,6 +162,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000, // ۵ دقیقه تایم‌اوت
             data: {
                 action: 'smart_ai_get_post_images_list',
                 security: smart_ai_params.nonce,
@@ -236,6 +241,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000, // ۵ دقیقه تایم‌اوت
             data: {
                 action: 'smart_ai_replace_specific_image',
                 security: smart_ai_params.nonce,
@@ -286,6 +292,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000,
             data: {
                 action: 'smart_ai_analyze_competitors',
                 security: smart_ai_params.nonce,
@@ -311,10 +318,10 @@ jQuery(document).ready(function($) {
                     resultBox.addClass('error').html(response.data.message).fadeIn();
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                resultBox.addClass('error').html('خطا در بارگذاری رقبا.').fadeIn();
+                resultBox.addClass('error').html('خطا در بارگذاری رقبا: ' + error).fadeIn();
             }
         });
     });
@@ -339,6 +346,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000,
             data: {
                 action: 'smart_ai_generate_new_post',
                 security: smart_ai_params.nonce,
@@ -357,10 +365,10 @@ jQuery(document).ready(function($) {
                     resultBox.addClass('error').html(response.data.message).fadeIn();
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                resultBox.addClass('error').html('خطا در تولید مقاله نهایی رقابتی.').fadeIn();
+                resultBox.addClass('error').html('خطا در تولید مقاله نهایی رقابتی: ' + error).fadeIn();
             }
         });
     });
@@ -384,6 +392,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000,
             data: {
                 action: 'smart_ai_suggest_clusters',
                 security: smart_ai_params.nonce,
@@ -414,10 +423,10 @@ jQuery(document).ready(function($) {
                     alert('خطا: ' + response.data.message);
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                alert('خطا در ارتباط با سرور.');
+                alert('خطا در ارتباط با سرور: ' + error);
             }
         });
     });
@@ -435,6 +444,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
+            timeout: 300000,
             data: {
                 action: 'smart_ai_generate_new_post',
                 security: smart_ai_params.nonce,
@@ -449,6 +459,7 @@ jQuery(document).ready(function($) {
                     $.ajax({
                         url: smart_ai_params.ajax_url,
                         type: 'POST',
+                        timeout: 300000,
                         data: {
                             action: 'smart_ai_create_cluster_link',
                             security: smart_ai_params.nonce,
