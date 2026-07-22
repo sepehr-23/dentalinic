@@ -71,7 +71,16 @@ class WPSmartAI_Image_Handler {
         preg_match_all( '/<!--\s*PLACE_IMAGE:\s*(.*?)\s*-->/', $content, $matches );
 
         if ( empty( $matches[0] ) ) {
-            // اگر تگی در متن نبود، کلمه کلیدی پست را برای تولید عکس‌ها استخراج می‌کنیم
+            // اگر از قبل این مقاله تصویر شاخص دارد یا در متن آن تگ تصویر وجود دارد، هرگز تصاویر را عوض نمی‌کنیم!
+            $has_thumb = has_post_thumbnail( $post_id );
+            $has_img_tag = ( strpos( $content, '<img' ) !== false );
+
+            if ( $has_thumb || $has_img_tag ) {
+                error_log("Smart AI SEO - Post already has images, skipping downloading new ones during content optimization.");
+                return $content; // محتوا را بدون تغییر عکس برمی‌گردانیم تا هم سریع‌تر کار کند و هم تصاویر حفظ شوند.
+            }
+
+            // اگر مقاله کلاً بدون عکس بود، ۳ عکس سئو شده جادویی متناسب با کلمه کلیدی تولید می‌کنیم
             $keyword = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
             if ( empty( $keyword ) ) {
                 $keyword = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );

@@ -1,6 +1,6 @@
 <?php
 /**
- * کلاس مدیریت اتصال به مدل‌های هوش مصنوعی (مدل gemini-flash-latest)
+ * کلاس مدیریت اتصال به مدل‌های هوش مصنوعی (مدل gemini-1.5-flash)
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,8 +22,8 @@ class WPSmartAI_Engine {
             return new WP_Error( 'missing_api_key', 'لطفا کلید API هوش مصنوعی جمینی را در بخش تنظیمات وارد کنید.' );
         }
 
-        // استفاده از مدل بروز شده gemini-flash-latest به درخواست کاربر و rawurlencode برای امنیت کلید
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' . rawurlencode( $api_key );
+        // استفاده از مدل فوق‌العاده سریع و استاندارد گوگل gemini-1.5-flash جهت جلوگیری از خطای ۴۰۰/۴۰۴ گوگل
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . rawurlencode( $api_key );
 
         $body = array(
             'contents' => array(
@@ -57,7 +57,7 @@ class WPSmartAI_Engine {
         $response_body = wp_remote_retrieve_body( $response );
 
         if ( $code !== 200 ) {
-            return new WP_Error( 'api_error', 'خطا در ارتباط با سرور گوگل: ' . $response_body );
+            return new WP_Error( 'api_error', 'خطا در ارتباط با سرور گوگل (ممکن است کلید API نادرست باشد): ' . $response_body );
         }
 
         $data = json_decode( $response_body, true );
@@ -166,7 +166,7 @@ class WPSmartAI_Engine {
 {$content}
 ---
 
-خروجی باید فقط و فقط بدنه اصلی مقاله به صورت کدهای HTML تمیز و طراحی شده به زبان فارسی باشد. هیچ پیام، مقدمه، توضیح انگلیسی، تگ markdown یا کد ```html اضافی صادر نکن:";
+خروجی باید فقط و فقط بدنه اصلی مقاله به صورت کدهای HTML تمیز و طراحی شده به زبان فارسی باشد. هیچ پیام, مقدمه، توضیح انگلیسی، تگ markdown یا کد ```html اضافی صادر نکن:";
 
         return self::call_gemini( $prompt );
     }
