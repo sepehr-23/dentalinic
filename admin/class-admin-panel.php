@@ -147,21 +147,24 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_error( array( 'message' => $optimized_text->get_error_message() ) );
         }
 
-        // ۲. دانلود و درج تصاویر هوشمند با تگ Alt خودکار به جای تگ‌های موقت تصویر
+        // ۲. دانلود و درج تصاویر هوشمند با تگ Alt خودکار به جای تگ‌های موقت تصویر و تخصیص تصویر شاخص
         $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $optimized_text, $post_id );
 
         // ۳. ساخت متادیتای سئو و تغییر آن‌ها در افزونه‌های Rank Math / Yoast
         $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
         WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
-        // ۴. بروزرسانی نهایی مقاله در وردپرس
+        // ۴. تبدیل و ساختاربندی به قالب پیشرفته المنتور (Elementor Layout JSON) بر اساس قالب ارسالی شما
+        WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
+
+        // ۵. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس برای همگام‌سازی بکاپ
         wp_update_post( array(
             'ID'           => $post_id,
             'post_content' => $final_content
         ) );
 
         wp_send_json_success( array(
-            'message' => 'مقاله با موفقیت بهینه‌سازی شد، تصاویر دانلود شدند و چراغ‌های سئو سبز شدند!',
+            'message' => 'مقاله با موفقیت بهینه‌سازی و تبدیل به قالب المنتور شد، تمام تیک‌های سئو سبز شدند!',
             'meta'    => $meta_data
         ) );
     }
@@ -194,18 +197,18 @@ class WPSmartAI_Admin_Panel {
             $tone_farsi = 'رسمی و علمی';
         }
 
-        // ساخت پرومپت رقابتی بر اساس مقالات رقیب
+        // ساخت پرومپت رقابتی بر اساس مقالات رقیب با رعایت تمام معیارهای Yoast / Rank Math
         $prompt = "تو یک استراتژیست محتوا و نویسنده افسانه‌ای سئو به زبان فارسی هستی.
 وظیفه تو نوشتن یک مقاله فوق‌العاده با کلمه کلیدی اصلی '{$keyword}' است.
 ما ۳ رقیب برتر در این کلمه کلیدی را تحلیل کردیم و خلاصه‌ای از مطالب آنها در زیر آمده است:
 {$competitor_data}
 
-ماموریت تو:
+ماموریت تو برای سبز کردن صد در صدی تیک‌های سئو:
 1. مقاله‌ای بنویس که کامل‌تر، جامع‌تر و جذاب‌تر از هر سه رقیب باشد. جاهای خالی محتوای آن‌ها را پر کن.
-2. لحن متن باید '{$tone_farsi}' باشد.
-3. اصول نگارشی فارسی، استفاده فراوان و طبیعی از کلمه کلیدی '{$keyword}' را در هدینگ‌ها (H2, H3)، پاراگراف اول و بدنه رعایت کن.
-4. جدول مقایسه‌ای یا لیست‌های نشانه‌دار جذاب بساز.
-5. حتماً در جاهای بسیار جذاب مقاله تگ‌های <!-- PLACE_IMAGE: توصیف تصویر به زبان فارسی --> برای درج عکس قرار بده.
+2. طول جملات بسیار کوتاه باشد (تا حد امکان کمتر از ۱۵ کلمه برای رعایت خطای طول جمله خوانایی).
+3. هدینگ‌های مناسب و پی در پی H2 و H3 (هر ۱۵۰ تا ۲۰۰ کلمه یک هدینگ) اضافه کن که چندین هدینگ شامل کلمه کلیدی '{$keyword}' باشند.
+4. حداقل ۲ لینک داخلی طبیعی به شکل <a href=\"/services/\">صفحه خدمات</a> و <a href=\"/contact/\">صفحه تماس</a> و حداقل ۱ لینک خارجی به یک مرجع معتبر مثل ویکی‌پدیا اضافه کن.
+5. حتماً حداقل ۲ بار تگ تصویر به فرمت <!-- PLACE_IMAGE: elevator modern design | تصویر مدرن آسانسور در حال نصب با کلمه کلیدی '{$keyword}' --> اضافه کن.
 6. هیچ متنی جز بدنه اصلی مقاله فارسی خروجی نده.";
 
         $text_response = WPSmartAI_Engine::call_gemini( $prompt );
@@ -225,21 +228,24 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_error( array( 'message' => 'خطا در ایجاد پیش‌نویس پست.' ) );
         }
 
-        // دانلود تصاویر و قرار دادن آلت‌ها
+        // دانلود تصاویر، درج در متن و تخصیص تصویر شاخص اصلی پست
         $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $text_response, $new_post_id );
 
-        // تولید متادیتا و ست کردن تیک‌های سئو
+        // تولید متادیتا و ست کردن تیک‌های سئو (قرار دادن کلمه کلیدی در اول عنوان و اصلاح طول توضیحات متا)
         $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
         WPSmartAI_SEO_Integrator::update_seo_metadata( $new_post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
-        // آپدیت متن نهایی مقاله
+        // تبدیل پست به قالب المنتور (Elementor JSON layout)
+        WPSmartAI_SEO_Integrator::convert_post_to_elementor( $new_post_id, $final_content );
+
+        // آپدیت متن نهایی مقاله در وردپرس برای همگام‌سازی بکاپ
         wp_update_post( array(
             'ID'           => $new_post_id,
             'post_content' => $final_content
         ) );
 
         wp_send_json_success( array(
-            'message' => 'مقاله فوق رقابتی با موفقیت نوشته و به عنوان پیش‌نویس ذخیره شد!',
+            'message' => 'مقاله فوق رقابتی با موفقیت نوشته، دانلود عکس‌ها و تصویر شاخص با آلت بهینه‌سازی شد، تبدیل به قالب المنتور شد و به عنوان پیش‌نویس ذخیره شد!',
             'post_id' => $new_post_id,
             'edit_url'=> get_edit_post_link( $new_post_id, 'raw' )
         ) );

@@ -16,9 +16,20 @@ class WPSmartAI_Image_Handler {
         $settings = get_option( 'wp_smart_ai_seo_settings', array() );
         $unsplash_key = isset( $settings['unsplash_key'] ) ? $settings['unsplash_key'] : '';
 
+        // تمیز کردن کوئری
+        $query = trim( $query );
+
         if ( empty( $unsplash_key ) ) {
-            // اگر کلید اختصاصی نبود، از کلید آزمایشی یا عکس‌های دامی باکیفیت Unsplash بر اساس موضوع استفاده می‌کنیم
-            $image_url = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80';
+            // استفاده از تصاویر رندوم و جذاب مرتبط با موضوع آسانسور و بالابر در صورت نبودن کلید
+            $random_ids = array(
+                'photo-1498050108023-c5249f4df085', // tech
+                'photo-1581094288338-2314dddb7eed', // engineering
+                'photo-1541888946425-d81bb19240f5', // construction
+                'photo-1504307651254-35680f356dfd', // builder
+                'photo-1605647540924-852290f6b0d5'  // modern elevator / architecture
+            );
+            $selected_photo = $random_ids[ array_rand( $random_ids ) ];
+            $image_url = 'https://images.unsplash.com/' . $selected_photo . '?auto=format&fit=crop&w=1200&q=80';
         } else {
             // فراخوانی API رسمی Unsplash
             $api_url = 'https://api.unsplash.com/photos/random?query=' . urlencode( $query ) . '&client_id=' . $unsplash_key;
@@ -32,7 +43,7 @@ class WPSmartAI_Image_Handler {
         }
 
         if ( empty( $image_url ) ) {
-            $image_url = 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80';
+            $image_url = 'https://images.unsplash.com/photo-1581094288338-2314dddb7eed?auto=format&fit=crop&w=1200&q=80';
         }
 
         // دانلود تصویر به پوشه آپلودهای وردپرس
@@ -47,7 +58,7 @@ class WPSmartAI_Image_Handler {
         }
 
         $file_array = array(
-            'name'     => sanitize_title( $query ) . '.jpg',
+            'name'     => sanitize_title( $query ) . '-' . rand(100, 999) . '.jpg',
             'tmp_name' => $tmp
         );
 
@@ -68,31 +79,53 @@ class WPSmartAI_Image_Handler {
     }
 
     /**
-     * جایگزینی تگ‌های <!-- PLACE_IMAGE: ... --> با تگ‌های واقعی عکس در متن مقاله
+     * جایگزینی تگ‌های <!-- PLACE_IMAGE: ... --> با تگ‌های واقعی عکس در متن مقاله و تخصیص تصویر شاخص
      */
     public static function insert_images_into_content( $content, $post_id = 0 ) {
-        // الگو برای استخراج درخواست تصویر
+        // الگو برای استخراج درخواست تصویر به فرمت: <!-- PLACE_IMAGE: query | alt -->
         preg_match_all( '/<!--\s*PLACE_IMAGE:\s*(.*?)\s*-->/', $content, $matches );
 
         if ( empty( $matches[0] ) ) {
+            // اگر هیچ عکسی در متن مشخص نشده بود، یک عکس پیش‌فرض مرتبط با کلمه کلیدی در ابتدای متن قرار می‌دهیم
+            $default_query = 'elevator construction';
+            $default_alt = get_the_title( $post_id );
+            $attachment_id = self::fetch_and_upload_image( $default_query, $post_id, $default_alt );
+            if ( ! is_wp_error( $attachment_id ) ) {
+                set_post_thumbnail( $post_id, $attachment_id ); // تصویر شاخص
+                $image_src = wp_get_attachment_image_url( $attachment_id, 'large' );
+                $html_image = '
+                <figure class="wp-block-image size-large">
+                    <img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $default_alt ) . '" class="wp-image-' . $attachment_id . '"/>
+                </figure>';
+                return $html_image . "\n" . $content;
+            }
             return $content;
         }
 
-        foreach ( $matches[0] as $index => $full_tag ) {
-            $image_query = $matches[1][$index];
+        $first_image_id = 0;
 
-            // تولید عنوان آلت به کمک کلمات هم‌خانواده
-            $alt_text = $image_query;
+        foreach ( $matches[0] as $index => $full_tag ) {
+            $raw_param = $matches[1][$index];
+            $parts = explode( '|', $raw_param );
+
+            $image_query = trim( $parts[0] );
+            $alt_text = isset( $parts[1] ) ? trim( $parts[1] ) : $image_query;
 
             // دانلود و دریافت شناسه پیوست
             $attachment_id = self::fetch_and_upload_image( $image_query, $post_id, $alt_text );
 
             if ( ! is_wp_error( $attachment_id ) ) {
+                if ( $first_image_id === 0 ) {
+                    $first_image_id = $attachment_id;
+                    // قرار دادن عکس اول به عنوان تصویر شاخص (Featured Image)
+                    set_post_thumbnail( $post_id, $attachment_id );
+                }
+
                 $image_src = wp_get_attachment_image_url( $attachment_id, 'large' );
                 $html_image = '
-                <figure class="wp-block-image size-large">
-                    <img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $alt_text ) . '" class="wp-image-' . $attachment_id . '"/>
-                    <figcaption class="wp-element-caption">' . esc_html( $alt_text ) . '</figcaption>
+                <figure class="wp-block-image size-large" style="margin: 20px 0; text-align: center;">
+                    <img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $alt_text ) . '" class="wp-image-' . $attachment_id . '" style="border-radius:16px; max-width: 100%; height: auto;"/>
+                    <figcaption class="wp-element-caption" style="color: #7a9bcb; font-size: 13px; margin-top: 8px;">' . esc_html( $alt_text ) . '</figcaption>
                 </figure>';
 
                 // جایگزینی تگ کامنت با تصویر واقعی
