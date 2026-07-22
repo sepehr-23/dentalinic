@@ -71,29 +71,33 @@ class WPSmartAI_Image_Handler {
         preg_match_all( '/<!--\s*PLACE_IMAGE:\s*(.*?)\s*-->/', $content, $matches );
 
         if ( empty( $matches[0] ) ) {
-            // اگر از قبل این مقاله تصویر شاخص دارد یا در متن آن تگ تصویر وجود دارد، هرگز تصاویر را عوض نمی‌کنیم!
-            $has_thumb = has_post_thumbnail( $post_id );
-            $has_img_tag = ( strpos( $content, '<img' ) !== false );
+            if ( $post_id > 0 ) {
+                // اگر از قبل این مقاله تصویر شاخص دارد یا در متن آن تگ تصویر وجود دارد، هرگز تصاویر را عوض نمی‌کنیم!
+                $has_thumb = has_post_thumbnail( $post_id );
+                $has_img_tag = ( strpos( $content, '<img' ) !== false );
 
-            if ( $has_thumb || $has_img_tag ) {
-                error_log("Smart AI SEO - Post already has images, skipping downloading new ones during content optimization.");
-                return $content; // محتوا را بدون تغییر عکس برمی‌گردانیم تا هم سریع‌تر کار کند و هم تصاویر حفظ شوند.
+                if ( $has_thumb || $has_img_tag ) {
+                    error_log("Smart AI SEO - Post already has images, skipping downloading new ones during content optimization.");
+                    return $content; // محتوا را بدون تغییر عکس برمی‌گردانیم تا هم سریع‌تر کار کند و هم تصاویر حفظ شوند.
+                }
             }
 
-            // اگر مقاله کلاً بدون عکس بود، ۳ عکس سئو شده جادویی متناسب با کلمه کلیدی تولید می‌کنیم
-            $keyword = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
-            if ( empty( $keyword ) ) {
-                $keyword = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );
+            $keyword = '';
+            if ( $post_id > 0 ) {
+                $keyword = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
+                if ( empty( $keyword ) ) {
+                    $keyword = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );
+                }
             }
             if ( empty( $keyword ) ) {
-                $keyword = get_the_title( $post_id );
+                $keyword = ( $post_id > 0 ) ? get_the_title( $post_id ) : 'elevator luxury cabin';
             }
 
             error_log("Smart AI SEO - Injected AI images on demand for keyword: " . $keyword);
 
             // ترجمه کلمه کلیدی به انگلیسی از طریق جمینی
             $queries = WPSmartAI_Engine::translate_keyword_to_english( $keyword );
-            if ( is_wp_error( $queries ) ) {
+            if ( is_wp_error( $queries ) || ! is_array( $queries ) || count( $queries ) < 3 ) {
                 $queries = array( 'elevator cabin', 'elevator motor', 'escalator' );
             }
 
@@ -114,7 +118,7 @@ class WPSmartAI_Image_Handler {
             for ( $i = 0; $i < 3; $i++ ) {
                 $attachment_id = self::fetch_and_upload_image( $default_queries[$i], $post_id, $default_alts[$i] );
                 if ( ! is_wp_error( $attachment_id ) ) {
-                    if ( $i === 0 ) {
+                    if ( $i === 0 && $post_id > 0 ) {
                         $first_img_id = $attachment_id;
                         set_post_thumbnail( $post_id, $attachment_id ); // قرار دادن تصویر شاخص اصلی
                     }
@@ -165,7 +169,7 @@ class WPSmartAI_Image_Handler {
             $attachment_id = self::fetch_and_upload_image( $image_query, $post_id, $alt_text );
 
             if ( ! is_wp_error( $attachment_id ) ) {
-                if ( $first_image_id === 0 ) {
+                if ( $first_image_id === 0 && $post_id > 0 ) {
                     $first_image_id = $attachment_id;
                     // قرار دادن عکس اول به عنوان تصویر شاخص (Featured Image)
                     set_post_thumbnail( $post_id, $attachment_id );
