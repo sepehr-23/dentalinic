@@ -65,7 +65,6 @@ class WPSmartAI_Admin_Panel {
     }
 
     public function enqueue_admin_assets( $hook ) {
-        // لود فایل‌ها فقط برای صفحات افزونه سئو هوشمند
         if ( strpos( $hook, 'wp-smart-ai-seo' ) === false ) {
             return;
         }
@@ -139,8 +138,16 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_error( array( 'message' => 'مقاله پیدا نشد.' ) );
         }
 
+        $post_status = get_post_status( $post_id );
+        if ( ! $post_status ) {
+            $post_status = 'publish';
+        }
+
         $settings = get_option( 'wp_smart_ai_seo_settings', array() );
         $tone = isset( $settings['tone'] ) ? $settings['tone'] : 'friendly';
+
+        // ذخیره موقت کلمه کلیدی در فیلدهای سئو
+        WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده با هوش مصنوعی' );
 
         // ۱. تولید محتوای بهینه‌شده به همراه کدهای تصویری <!-- PLACE_IMAGE: ... -->
         $optimized_text = WPSmartAI_Engine::generate_optimized_content( $post->post_content, $keyword, $tone );
@@ -158,10 +165,11 @@ class WPSmartAI_Admin_Panel {
         // ۴. تبدیل و ساختاربندی به قالب پیشرفته المنتور (Elementor Layout JSON) بر اساس قالب ارسالی شما
         WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
-        // ۵. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس برای همگام‌سازی بکاپ
+        // ۵. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس با حفظ وضعیت انتشار
         wp_update_post( array(
             'ID'           => $post_id,
-            'post_content' => $final_content
+            'post_content' => $final_content,
+            'post_status'  => $post_status
         ) );
 
         wp_send_json_success( array(
@@ -179,7 +187,7 @@ class WPSmartAI_Admin_Panel {
         $keyword = sanitize_text_field( $_POST['keyword'] );
 
         if ( ! $post_id || empty( $keyword ) ) {
-            wp_send_json_error( array( 'message' => 'اطلاعات ارسالی نامعتبر است.' ) );
+            wp_send_json_error( array( 'message' => 'اطلاعات ارسالی نامعتبر است. لطفاً کلمه کلیدی را بنویسید.' ) );
         }
 
         $post = get_post( $post_id );
@@ -187,21 +195,39 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_error( array( 'message' => 'مقاله یافت نشد.' ) );
         }
 
-        // درج تصاویر و تصویر شاخص و آلت تگ‌ها
-        $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $post->post_content, $post_id );
+        $post_status = get_post_status( $post_id );
+        if ( ! $post_status ) {
+            $post_status = 'publish';
+        }
 
-        // بروزرسانی قالب المنتور به همراه عکس‌های جدید اضافه شده
-        WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
+        // همگام سازی کلمه کلیدی در فیلدهای سئو
+        WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده به همراه عکس شاخص و عکس های گالری' );
 
-        // آپدیت متن اصلی وردپرس
-        wp_update_post( array(
-            'ID'           => $post_id,
-            'post_content' => $final_content
-        ) );
+        try {
+            // درج تصاویر و تصویر شاخص و آلت تگ‌ها
+            $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $post->post_content, $post_id );
 
-        wp_send_json_success( array(
-            'message' => '۳ تصویر فوق‌العاده سئوشده بدون نوشته دانلود و در متن چیده شدند و تصویر شاخص نیز با موفقیت ست شد!'
-        ) );
+            if ( is_wp_error( $final_content ) ) {
+                wp_send_json_error( array( 'message' => $final_content->get_error_message() ) );
+            }
+
+            // بروزرسانی قالب المنتور به همراه عکس‌های جدید اضافه شده
+            WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
+
+            // آپدیت متن اصلی وردپرس با حفظ استاتوس انتشار مقاله
+            wp_update_post( array(
+                'ID'           => $post_id,
+                'post_content' => $final_content,
+                'post_status'  => $post_status
+            ) );
+
+            wp_send_json_success( array(
+                'message' => '۳ تصویر فوق‌العاده سئوشده بدون نوشته دانلود و در متن چیده شدند و تصویر شاخص نیز با موفقیت ست شد!'
+            ) );
+
+        } catch (Exception $e) {
+            wp_send_json_error( array( 'message' => 'خطایی در اجرای تصویرسازی رخ داد: ' . $e->getMessage() ) );
+        }
     }
 
     public function ajax_analyze_competitors() {

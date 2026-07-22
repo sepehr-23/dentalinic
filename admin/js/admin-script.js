@@ -74,11 +74,14 @@ jQuery(document).ready(function($) {
                 } else {
                     statusCell.html('<span style="color: red;">❌ خطا در بهینه‌سازی</span>');
                     alert('خطا: ' + response.data.message);
+                    console.error('Smart AI SEO - Optimization failed:', response);
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای ارتباطی</span>');
+                console.error('Smart AI SEO - AJAX error:', xhr, status, error);
+                alert('خطای سرور رخ داد. لطفا کنسول مرورگر (F12) یا گزارش خطاهای سرور را چک کنید.');
             }
         });
     });
@@ -100,6 +103,8 @@ jQuery(document).ready(function($) {
         btn.prop('disabled', true);
         statusCell.html('<div class="smart-ai-spinner"></div> در حال تولید و چیدمان تصاویر بدون نوشته...');
 
+        console.log('Smart AI SEO - Initializing Magic Image Maker for Post ID:', postId, 'with keyword:', keyword);
+
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
@@ -116,12 +121,15 @@ jQuery(document).ready(function($) {
                     alert(response.data.message);
                 } else {
                     statusCell.html('<span style="color: red;">❌ خطا در ایجاد تصاویر</span>');
-                    alert('خطا: ' + response.data.message);
+                    alert('خطا در بارگذاری تصاویر: ' + response.data.message);
+                    console.error('Smart AI SEO - Image Maker API error:', response);
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای سرور در دانلود عکس</span>');
+                console.error('Smart AI SEO - AJAX Failure inside Image Maker:', xhr, status, error);
+                alert('خطای اتصال به سرور رخ داد! ممکن است به دلیل لودینگ طولانی یا عدم تنظیم کلید API در پیشخوان باشد. لطفا کنسول (F12) یا فایل error_log هاست را بررسی نمایید.');
             }
         });
     });

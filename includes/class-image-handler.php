@@ -16,26 +16,18 @@ class WPSmartAI_Image_Handler {
         $settings = get_option( 'wp_smart_ai_seo_settings', array() );
         $unsplash_key = isset( $settings['unsplash_key'] ) ? $settings['unsplash_key'] : '';
 
-        // تمیز کردن کوئری و پیوست کردن دستورالعمل برای کیفیت بالا و عدم درج متن روی تصویر
+        // پاک کردن کلمات متنی ناخواسته
         $query = trim( $query );
-        $clean_query = str_replace( array('no text', 'without text'), '', $query );
-        $search_query = $clean_query . ' high resolution realistic photography';
+        $clean_query = str_replace( array('no text', 'without text', 'text-free'), '', $query );
 
-        if ( empty( $unsplash_key ) ) {
-            // استفاده از تصاویر رندوم و جذاب مرتبط با آسانسور و بالابر در صورت نبودن کلید API
-            $random_ids = array(
-                'photo-1517649763962-0c623066013b', // movement / elevator
-                'photo-1581094288338-2314dddb7eed', // engineering
-                'photo-1541888946425-d81bb19240f5', // construction
-                'photo-1504307651254-35680f356dfd', // construction site
-                'photo-1605647540924-852290f6b0d5', // lift
-                'photo-1486406146926-c627a92ad1ab', // building skyscrapers
-                'photo-1497366216548-37526070297c'  // office interior
-            );
-            $selected_photo = $random_ids[ array_rand( $random_ids ) ];
-            $image_url = 'https://images.unsplash.com/' . $selected_photo . '?auto=format&fit=crop&w=1200&q=80';
-        } else {
-            // فراخوانی API رسمی Unsplash با فیلتر جهت دریافت تصاویر فوتورئالیستی بدون متن
+        // الحاق تگ‌های کیفیتی برای فوتورئالیسم و جلوگیری از متون روی تصویر
+        $search_query = $clean_query . ' photorealistic interior design realistic no text';
+
+        error_log("Smart AI SEO - Searching Unsplash for: " . $search_query);
+
+        $image_url = '';
+        if ( ! empty( $unsplash_key ) ) {
+            // فراخوانی API رسمی Unsplash
             $api_url = 'https://api.unsplash.com/photos/random?query=' . urlencode( $search_query ) . '&client_id=' . $unsplash_key;
             $response = wp_remote_get( $api_url );
             if ( ! is_wp_error( $response ) ) {
@@ -43,21 +35,36 @@ class WPSmartAI_Image_Handler {
                 if ( isset( $body['urls']['regular'] ) ) {
                     $image_url = $body['urls']['regular'];
                 }
+            } else {
+                error_log("Smart AI SEO - Unsplash API Error: " . $response->get_error_message());
             }
         }
 
+        // اگر کلید موجود نبود یا عکس پیدا نشد، از تصاویر هاردکدشده باکیفیت و جذاب مرتبط با صنعت آسانسور و معماری استفاده می‌کنیم
         if ( empty( $image_url ) ) {
-            $image_url = 'https://images.unsplash.com/photo-1581094288338-2314dddb7eed?auto=format&fit=crop&w=1200&q=80';
+            $elevator_photos = array(
+                'photo-1605647540924-852290f6b0d5', // modern lift
+                'photo-1517649763962-0c623066013b', // architecture lift
+                'photo-1581094288338-2314dddb7eed', // engineering engine
+                'photo-1541888946425-d81bb19240f5', // construction
+                'photo-1504307651254-35680f356dfd', // construction site
+                'photo-1486406146926-c627a92ad1ab', // commercial building skyscraper
+                'photo-1497366216548-37526070297c'  // luxury lobby escalators
+            );
+            $selected_photo = $elevator_photos[ array_rand( $elevator_photos ) ];
+            $image_url = 'https://images.unsplash.com/' . $selected_photo . '?auto=format&fit=crop&w=1200&q=80';
         }
+
+        error_log("Smart AI SEO - Downloading image from URL: " . $image_url);
 
         // دانلود تصویر به پوشه آپلودهای وردپرس
         require_once ABSPATH . 'wp-admin/includes/image.php';
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
 
-        // دانلود فایل به صورت موقت
         $tmp = download_url( $image_url );
         if ( is_wp_error( $tmp ) ) {
+            error_log("Smart AI SEO - Download failed: " . $tmp->get_error_message());
             return $tmp;
         }
 
@@ -70,15 +77,17 @@ class WPSmartAI_Image_Handler {
         $id = media_handle_sideload( $file_array, $post_id, $alt_text );
 
         if ( is_wp_error( $id ) ) {
+            error_log("Smart AI SEO - Sideload media failed: " . $id->get_error_message());
             @unlink( $file_array['tmp_name'] );
             return $id;
         }
 
-        // درج تگ Alt هوشمند برای تصویر آپلود شده جهت رعایت سئو
+        // درج تگ Alt هوشمند برای تصویر آپلود شده
         if ( ! empty( $alt_text ) ) {
             update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( $alt_text ) );
         }
 
+        error_log("Smart AI SEO - Image downloaded successfully with ID: " . $id);
         return $id;
     }
 
@@ -89,13 +98,30 @@ class WPSmartAI_Image_Handler {
         // الگو برای استخراج درخواست تصویر به فرمت: <!-- PLACE_IMAGE: query | alt -->
         preg_match_all( '/<!--\s*PLACE_IMAGE:\s*(.*?)\s*-->/', $content, $matches );
 
-        // اگر هیچ عکسی در متن مشخص نشده بود، ۳ عکس پیش‌فرض مرتبط با موضوع دانلود و در جاهای مناسب متن اضافه می‌کنیم
         if ( empty( $matches[0] ) ) {
-            $default_queries = array('elevator building', 'elevator engine', 'luxury lift cabin');
+            // اگر تگی در متن نبود، کلمه کلیدی پست را برای تولید عکس‌ها استخراج می‌کنیم
+            $keyword = get_post_meta( $post_id, 'rank_math_focus_keyword', true );
+            if ( empty( $keyword ) ) {
+                $keyword = get_post_meta( $post_id, '_yoast_wpseo_focuskw', true );
+            }
+            if ( empty( $keyword ) ) {
+                $keyword = get_the_title( $post_id );
+            }
+
+            error_log("Smart AI SEO - Injected images on demand for keyword: " . $keyword);
+
+            // ترجمه کلمه کلیدی به انگلیسی از طریق جمینی به صورت ۳ فاکتور مجزا
+            $queries = WPSmartAI_Engine::translate_keyword_to_english( $keyword );
+
+            $default_queries = array(
+                $queries[0] . ' luxury lift',
+                $queries[1] . ' motor engine',
+                $queries[2] . ' escalator architecture'
+            );
             $default_alts = array(
-                'خرید آسانسور مناسب ساختمان مسکونی و تجاری',
-                'بهترین برند موتور آسانسور و کیفیت فنی قطعات',
-                'طراحی دکوراسیون و کابین شیشه ای لوکس آسانسور'
+                'خرید و نصب آسانسور لوکس با کلمه کلیدی ' . $keyword,
+                'موتور اصلی آسانسور و کیفیت فنی قطعات ' . $keyword,
+                'طراحی کابین آسانسور و دکوراسیون ' . $keyword
             );
 
             $inserted_images_html = array();
@@ -106,18 +132,24 @@ class WPSmartAI_Image_Handler {
                 if ( ! is_wp_error( $attachment_id ) ) {
                     if ( $i === 0 ) {
                         $first_img_id = $attachment_id;
-                        set_post_thumbnail( $post_id, $attachment_id ); // قرار دادن تصویر شاخص اصلی
+                        set_post_thumbnail( $post_id, $attachment_id ); // تصویر شاخص اصلی
                     }
                     $image_src = wp_get_attachment_image_url( $attachment_id, 'large' );
                     $inserted_images_html[] = '
-                    <figure class="wp-block-image size-large" style="margin: 30px 0; text-align: center;">
+                    <figure class="wp-block-image size-large" style="margin: 35px 0; text-align: center;">
                         <img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $default_alts[$i] ) . '" class="wp-image-' . $attachment_id . '" style="border-radius:16px; max-width: 100%; height: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"/>
                         <figcaption class="wp-element-caption" style="color: #7a9bcb; font-size: 13px; margin-top: 8px;">' . esc_html( $default_alts[$i] ) . '</figcaption>
                     </figure>';
+                } else {
+                    error_log("Smart AI SEO - Failed to fetch image: " . $attachment_id->get_error_message());
                 }
             }
 
-            // قرار دادن عکس‌ها به صورت مرتب در بالا، وسط و پایین مقاله
+            // پاک کردن هر تگ عکس تکراری قبلی در HTML جهت جلوگیری از به وجود آمدن گالری‌های خراب
+            $content = preg_replace('/<figure class="wp-block-image size-large.*?<\/figure>/is', '', $content);
+            $content = preg_replace('/<img[^>]+>/is', '', $content);
+
+            // توزیع تمیز تصاویر در بالا، وسط و انتهای متن اصلی
             if ( ! empty( $inserted_images_html ) ) {
                 $paragraphs = explode( '</p>', $content );
                 $total_p = count( $paragraphs );
@@ -164,7 +196,6 @@ class WPSmartAI_Image_Handler {
                     <figcaption class="wp-element-caption" style="color: #7a9bcb; font-size: 13px; margin-top: 8px;">' . esc_html( $alt_text ) . '</figcaption>
                 </figure>';
 
-                // جایگزینی تگ کامنت با تصویر واقعی
                 $content = str_replace( $full_tag, $html_image, $content );
             } else {
                 $content = str_replace( $full_tag, '', $content );
