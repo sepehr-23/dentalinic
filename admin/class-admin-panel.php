@@ -155,23 +155,16 @@ class WPSmartAI_Admin_Panel {
             $settings = get_option( 'wp_smart_ai_seo_settings', array() );
             $tone = isset( $settings['tone'] ) ? $settings['tone'] : 'friendly';
 
-            // ذخیره موقت کلمه کلیدی در فیلدهای سئو
             WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $post->post_title, 'بهینه شده با هوش مصنوعی' );
 
-            // ۱. تولید محتوای بهینه‌شده به همراه کدهای تصویری <!-- PLACE_IMAGE: ... -->
+            // ۱. تولید محتوای بهینه‌شده متنی (تصاویر دانلود یا عوض نمی‌شوند)
             $optimized_text = WPSmartAI_Engine::generate_optimized_content( $post->post_content, $keyword, $tone );
             if ( is_wp_error( $optimized_text ) ) {
                 wp_send_json_error( array( 'message' => $optimized_text->get_error_message() ) );
             }
 
-            // ۲. دانلود و درج تصاویر هوشمند با تگ Alt خودکار به جای تگ‌های موقت تصویر و تخصیص تصویر شاخص
-            $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $optimized_text, $post_id );
-            if ( is_wp_error( $final_content ) ) {
-                wp_send_json_error( array( 'message' => $final_content->get_error_message() ) );
-            }
-
-            // ۳. ساخت متادیتای سئو و تغییر آن‌ها در افزونه‌های Rank Math / Yoast
-            $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
+            // ۲. ساخت متادیتای سئو و تغییر آن‌ها در افزونه‌های Rank Math / Yoast
+            $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $optimized_text, $keyword );
             if ( is_wp_error( $meta_data ) ) {
                 $meta_data = array(
                     'title' => $keyword . ' | راهنمای کامل',
@@ -180,14 +173,15 @@ class WPSmartAI_Admin_Panel {
             }
             WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
-            // ۴. تبدیل و ساختاربندی به قالب پیشرفته المنتور (Elementor Layout JSON) بر اساس قالب ارسالی شما
-            WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
+            // ۳. تبدیل و ساختاربندی به قالب پیشرفته المنتور (Elementor Layout JSON) بر اساس قالب ارسالی شما
+            WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $optimized_text );
 
-            // ۵. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس با حفظ وضعیت انتشار
+            // ۴. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس با حفظ وضعیت انتشار و باز بودن نظرات
             wp_update_post( array(
-                'ID'           => $post_id,
-                'post_content' => $final_content,
-                'post_status'  => $post_status
+                'ID'             => $post_id,
+                'post_content'   => $optimized_text,
+                'post_status'    => $post_status,
+                'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
             ) );
 
             wp_send_json_success( array(
@@ -235,9 +229,10 @@ class WPSmartAI_Admin_Panel {
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
             wp_update_post( array(
-                'ID'           => $post_id,
-                'post_content' => $final_content,
-                'post_status'  => $post_status
+                'ID'             => $post_id,
+                'post_content'   => $final_content,
+                'post_status'    => $post_status,
+                'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
             ) );
 
             wp_send_json_success( array(
@@ -306,9 +301,10 @@ class WPSmartAI_Admin_Panel {
 
             // بروزرسانی پست در دیتابیس
             wp_update_post( array(
-                'ID'           => $post_id,
-                'post_content' => $result['content'],
-                'post_status'  => $post_status
+                'ID'             => $post_id,
+                'post_content'   => $result['content'],
+                'post_status'    => $post_status,
+                'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
             ) );
 
             wp_send_json_success( array(
@@ -378,10 +374,11 @@ class WPSmartAI_Admin_Panel {
 
             // ایجاد پست جدید در حالت پیش‌نویس
             $new_post_id = wp_insert_post( array(
-                'post_title'   => 'راهنمای جامع و ناگفته‌های ' . $keyword,
-                'post_content' => $text_response,
-                'post_status'  => 'draft',
-                'post_type'    => 'post'
+                'post_title'     => 'راهنمای جامع و ناگفته‌های ' . $keyword,
+                'post_content'   => $text_response,
+                'post_status'    => 'draft',
+                'post_type'      => 'post',
+                'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
             ) );
 
             if ( is_wp_error( $new_post_id ) ) {

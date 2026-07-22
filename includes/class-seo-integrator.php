@@ -155,8 +155,41 @@ class WPSmartAI_SEO_Integrator {
                     )
                 ),
                 'isInner' => false
+            ),
+            array(
+                'id' => '67617fb5',
+                'elType' => 'container',
+                'settings' => array(
+                    'flex_direction' => 'row',
+                    'content_width' => 'full',
+                    'border_border' => 'solid'
+                ),
+                'elements' => array(
+                    array(
+                        'id' => '63356212',
+                        'elType' => 'container',
+                        'settings' => array(),
+                        'elements' => array(
+                            array(
+                                'id' => '4e6bd9e1',
+                                'elType' => 'widget',
+                                'widgetType' => 'post-comments',
+                                'settings' => array(
+                                    '_skin' => 'theme_comments',
+                                    'custom_css' => '.ct-comments { margin-top: 24px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(0,200,255,0.06); border-radius: 14px; direction: rtl; }'
+                                ),
+                                'elements' => array()
+                            )
+                        ),
+                        'isInner' => true
+                    )
+                ),
+                'isInner' => false
             )
         );
+
+        // تنظیم خودکار قالب صفحه روی تمام عرض المنتور (Elementor Full Width)
+        update_post_meta( $post_id, '_wp_page_template', 'elementor_header_footer' );
 
         // ذخیره سازی اطلاعات المنتوری در Post Meta
         update_post_meta( $post_id, '_elementor_edit_mode', 'builder' );
