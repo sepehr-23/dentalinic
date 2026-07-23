@@ -51,4 +51,14 @@ $all_posts = get_posts( $args );
     <div id="pillar-tree-result" class="wp-smart-ai-card" style="display: none; border: 1px dashed #e65100;">
         <!-- اطلاعات از طریق جی‌کوئری تزریق می‌شوند -->
     </div>
+
+    <!-- کنسول گزارشات لایو و کپی کدهای خطا -->
+    <div class="wp-smart-ai-card smart-ai-console-wrapper" id="pillar-console-wrapper" style="margin-top: 25px; border-right: 4px solid #e65100; background: #1c1d22; color: #a9b2c3; font-family: monospace; border-radius: 8px; padding: 15px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d3139; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="color: #00c8ff; font-weight: bold; font-size: 13px;">🖥️ کنسول گزارشات و خطاها (Live Debug Console)</span>
+            <button class="button button-secondary copy-console-log-btn" data-target="pillar-console" style="font-size: 11px; background: #2d3139; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer;">📋 کپی کردن لاگ</button>
+        </div>
+        <div class="smart-ai-console-log" id="pillar-console" style="white-space: pre-wrap; font-size: 12px; line-height: 1.6; max-height: 250px; overflow-y: auto; padding-right: 5px; direction: ltr; text-align: left;"></div>
+    </div>
+
 </div>

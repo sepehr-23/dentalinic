@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $suggested_links_placeholder = "آدرس‌های پیشنهادی و معتبر سایت شما جهت کپی:\n" .
 "1. تماس و مشاوره تلفنی: https://keshavarzlift.ir/#call\n" .
 "2. فروشگاه قطعات آسانسور: https://keshavarzlift.ir/shop/\n" .
-"3. وبلاگ و دانستنی‌های آسانسور: https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%84%d8%a7%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/\n" .
+"3. وبلاگ و دانستنی‌های آسانسور: https://keshavarzlift.ir/%d9%85%d9%82%d8%a7%d9%8ال%d8%a7%d8%aa-%d9%88-%d8%af%d8%a7%d9%86%d8%b3%d8%aa%d9%86%db%8c-%d9%87%d8%a7/\n" .
 "4. فرم سفارش طراحی و ساخت: https://keshavarzlift.ir/%D9%81%D8%B1%D9%85%20%D8%B3%D9%81%D8%A7%D8%B1%D8%B4/";
 ?>
 
@@ -52,7 +52,7 @@ $suggested_links_placeholder = "آدرس‌های پیشنهادی و معتبر
 
         <div class="wp-smart-ai-field-group">
             <label for="writer_custom_prompt">📝 دستورالعمل و پرامپت دستی شما (لحن، موضوعات خاص یا نکات تمرکزی):</label>
-            <textarea id="writer_custom_prompt" rows="3" style="max-width: 600px; width:100%;" placeholder="مثلاً: روی مزایای موتورهای گیرلس و سرعت استاندارد آسانسورهای خانگی تمرکز بیشتری کن و لحن متن را دوستانه بنویس."></textarea>
+            <textarea id="writer_custom_prompt" rows="3" style="max-width: 600px; width:100%;" placeholder="مثلاً: روی مزایای موتورهای گیرلس و سرعت آسانسورهای خانگی تمرکز بیشتری کن و لحن متن را دوستانه بنویس."></textarea>
         </div>
 
         <div class="wp-smart-ai-field-group">
@@ -66,4 +66,14 @@ https://keshavarzlift.ir/#call با کلمه کلیدی 'مشاوره تلفنی
         <h3 style="margin-top: 30px;">🤖 مرحله دوم: نگارش مقاله جامع و برتر با هوش مصنوعی</h3>
         <button id="generate-best-article-btn" class="smart-ai-btn" style="background: #1b5e20 !important;">🧠 تولید مقاله شگفت‌انگیز فوق‌رقابتی و دانلود عکس‌ها</button>
     </div>
+
+    <!-- کنسول گزارشات لایو و کپی کدهای خطا -->
+    <div class="wp-smart-ai-card smart-ai-console-wrapper" id="writer-console-wrapper" style="margin-top: 25px; border-right: 4px solid #1b5e20; background: #1c1d22; color: #a9b2c3; font-family: monospace; border-radius: 8px; padding: 15px; display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d3139; padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="color: #00c8ff; font-weight: bold; font-size: 13px;">🖥️ کنسول گزارشات و خطاها (Live Debug Console)</span>
+            <button class="button button-secondary copy-console-log-btn" data-target="writer-console" style="font-size: 11px; background: #2d3139; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; cursor: pointer;">📋 کپی کردن لاگ</button>
+        </div>
+        <div class="smart-ai-console-log" id="writer-console" style="white-space: pre-wrap; font-size: 12px; line-height: 1.6; max-height: 250px; overflow-y: auto; padding-right: 5px; direction: ltr; text-align: left;"></div>
+    </div>
+
 </div>

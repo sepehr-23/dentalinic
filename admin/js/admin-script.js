@@ -1,42 +1,118 @@
 jQuery(document).ready(function($) {
 
-    // ذخیره تنظیمات عمومی
+    // تابع کمکی برای چاپ لاگ زمان‌دار در کنسول‌ها
+    function logToConsole(consoleId, message) {
+        var wrapper = $('#' + consoleId + '-wrapper');
+        var consoleBox = $('#' + consoleId);
+
+        if (wrapper.length && consoleBox.length) {
+            wrapper.fadeIn(200);
+            var date = new Date();
+            var timeStr = '[' + date.toTimeString().split(' ')[0] + '] ';
+            consoleBox.append(timeStr + message + "\n");
+
+            // اسکرول خودکار به انتهای کنسول
+            consoleBox.scrollTop(consoleBox[0].scrollHeight);
+        }
+    }
+
+    // کپی کردن محتوای کنسول به کلیپ‌بورد
+    $(document).on('click', '.copy-console-log-btn', function(e) {
+        e.preventDefault();
+        var targetId = $(this).data('target');
+        var consoleBox = $('#' + targetId);
+
+        if (consoleBox.length) {
+            var text = consoleBox.text();
+            if (!text) {
+                alert('کنسول خالی است.');
+                return;
+            }
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(function() {
+                    alert('لاگ‌ها با موفقیت در کلیپ‌بورد کپی شدند!');
+                }).catch(function(err) {
+                    fallbackCopyText(text);
+                });
+            } else {
+                fallbackCopyText(text);
+            }
+        }
+    });
+
+    function fallbackCopyText(text) {
+        var tempInput = $('<textarea>');
+        $('body').append(tempInput);
+        tempInput.val(text).select();
+        try {
+            document.execCommand('copy');
+            alert('لاگ‌ها با موفقیت کپی شدند (روش کمکی)!');
+        } catch (err) {
+            alert('خطا در کپی لاگ. لطفاً متن را دستی انتخاب و کپی کنید.');
+        }
+        tempInput.remove();
+    }
+
+    // ۱. ذخیره تنظیمات عمومی
     $('#smart-ai-settings-form').on('submit', function(e) {
         e.preventDefault();
         var form = $(this);
         var submitBtn = form.find('.smart-ai-btn');
         var loader = $('#settings-loader');
         var resultBox = $('#settings-result');
+        var consoleId = 'settings-console';
+
+        $('#' + consoleId).html(''); // پاک کردن لاگ‌های قبلی
+        logToConsole(consoleId, 'شروع ذخیره‌سازی تنظیمات...');
 
         submitBtn.prop('disabled', true);
         loader.css('display', 'flex');
         resultBox.hide();
 
+        var payload = {
+            action: 'smart_ai_save_settings',
+            security: smart_ai_params.nonce,
+            api_provider: $('#api_provider').val(),
+            api_key: $('#api_key').val(),
+            unsplash_key: $('#unsplash_key').val(),
+            tone: $('#tone').val()
+        };
+
+        logToConsole(consoleId, 'ارسال درخواست AJAX به سرور با اطلاعات: ' + JSON.stringify({
+            api_provider: payload.api_provider,
+            tone: payload.tone,
+            has_api_key: payload.api_key ? 'بله' : 'خیر'
+        }));
+
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
-            timeout: 300000, // ۵ دقیقه تایم‌اوت
-            data: {
-                action: 'smart_ai_save_settings',
-                security: smart_ai_params.nonce,
-                api_provider: $('#api_provider').val(),
-                api_key: $('#api_key').val(),
-                unsplash_key: $('#unsplash_key').val(),
-                tone: $('#tone').val()
-            },
+            timeout: 300000,
+            data: payload,
             success: function(response) {
                 loader.hide();
                 submitBtn.prop('disabled', false);
+                logToConsole(consoleId, 'پاسخ سرور دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
+                    logToConsole(consoleId, 'عملیات با موفقیت انجام شد: ' + response.data.message);
                     resultBox.removeClass('error').html(response.data.message).fadeIn();
                 } else {
-                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                    logToConsole(consoleId, 'سرور با خطا پاسخ داد: ' + (response.data ? response.data.message : 'خطای نامعلوم'));
+                    resultBox.addClass('error').html(response.data ? response.data.message : 'خطای نامعلوم').fadeIn();
                 }
             },
             error: function(xhr, status, error) {
                 loader.hide();
                 submitBtn.prop('disabled', false);
-                resultBox.addClass('error').html('خطایی در ارتباط با سرور رخ داد: ' + error).fadeIn();
+                logToConsole(consoleId, '⚠️ خطای شبکه رخ داد!');
+                logToConsole(consoleId, 'وضعیت خطا: ' + status);
+                logToConsole(consoleId, 'جزئیات خطا: ' + error);
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
+
+                resultBox.addClass('error').html('خطایی در ارتباط با سرور رخ داد. جزئیات کامل در کنسول لاگ ثبت شده است.').fadeIn();
                 console.error('Smart AI SEO - Save settings failure:', xhr, status, error);
             }
         });
@@ -49,13 +125,14 @@ jQuery(document).ready(function($) {
         $('#optimizer-settings-row-' + postId).slideToggle(250);
     });
 
-    // سئو و بهینه‌سازی مقاله قدیمی با دکمه جادویی (ارسال پرومپت و لینک‌های دستی)
+    // ۲. سئو و بهینه‌سازی مقاله قدیمی با دکمه جادویی
     $('.optimize-single-post').on('click', function() {
         var btn = $(this);
         var postId = btn.data('post-id');
         var keywordInput = $('#keyword-' + postId);
         var keyword = keywordInput.val();
         var statusCell = $('#status-' + postId);
+        var consoleId = 'optimizer-console';
 
         // واکشی پرومپت و لینک‌های اختصاصی برای این مقاله
         var customPrompt = $('#prompt-' + postId).val() || '';
@@ -67,48 +144,69 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        $('#' + consoleId).html(''); // پاکسازی کنسول
+        logToConsole(consoleId, 'شروع بهینه‌سازی متنی مقاله با شناسه: ' + postId);
+        logToConsole(consoleId, 'کلمه کلیدی تمرکزی: ' + keyword);
+        if (customPrompt) logToConsole(consoleId, 'دستورالعمل دستی: ' + customPrompt);
+        if (customLinks) logToConsole(consoleId, 'لینک‌های سفارشی: ' + customLinks);
+
         btn.prop('disabled', true);
         statusCell.html('<div class="smart-ai-spinner"></div> در حال تحلیل و بهبود سئو متنی...');
+
+        var payload = {
+            action: 'smart_ai_optimize_post',
+            security: smart_ai_params.nonce,
+            post_id: postId,
+            keyword: keyword,
+            custom_prompt: customPrompt,
+            custom_links: customLinks
+        };
+
+        logToConsole(consoleId, 'ارسال درخواست AJAX به سرور...');
 
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
-            timeout: 300000, // ۵ دقیقه تایم‌اوت
-            data: {
-                action: 'smart_ai_optimize_post',
-                security: smart_ai_params.nonce,
-                post_id: postId,
-                keyword: keyword,
-                custom_prompt: customPrompt,
-                custom_links: customLinks
-            },
+            timeout: 300000,
+            data: payload,
             success: function(response) {
                 btn.prop('disabled', false);
+                logToConsole(consoleId, 'پاسخ سرور دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
+                    logToConsole(consoleId, '✨ مقاله با موفقیت بهینه‌سازی شد! متادیتا و قالب المنتور با موفقیت آپدیت شدند.');
                     statusCell.html('<span style="color: green; font-weight: bold;">✔ بهینه‌سازی شد (تیک سبز سئو ست شد!)</span>');
                     alert(response.data.message);
                 } else {
+                    logToConsole(consoleId, '❌ خطا در فرآیند بهینه‌سازی: ' + (response.data ? response.data.message : 'خطای سرور'));
                     statusCell.html('<span style="color: red;">❌ خطا در بهینه‌سازی</span>');
-                    alert('خطا: ' + response.data.message);
-                    console.error('Smart AI SEO - Optimization failed:', response);
+                    alert('خطا: ' + (response.data ? response.data.message : 'خطای سرور'));
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای ارتباطی</span>');
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در بهینه‌سازی رخ داد!');
+                logToConsole(consoleId, 'وضعیت خطا: ' + status);
+                logToConsole(consoleId, 'جزئیات خطا: ' + error);
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
+
                 console.error('Smart AI SEO - AJAX error:', xhr, status, error);
-                alert('خطای سرور رخ داد. لطفا کنسول مرورگر (F12) یا گزارش خطاهای سرور را چک کنید. جزئیات: ' + error);
+                alert('خطای سرور رخ داد. لطفاً لاگ‌های داخل کنسول دیباگ پایین صفحه را کپی کرده و بررسی کنید.');
             }
         });
     });
 
-    // دکمه اختصاصی تصویرساز جادویی ۳‌تایی
+    // ۳. دکمه اختصاصی تصویرساز جادویی ۳‌تایی
     $('.generate-images-post').on('click', function() {
         var btn = $(this);
         var postId = btn.data('post-id');
         var keywordInput = $('#keyword-' + postId);
         var keyword = keywordInput.val();
         var statusCell = $('#status-' + postId);
+        var consoleId = 'optimizer-console';
 
         if (!keyword) {
             alert('لطفاً ابتدا کلمه کلیدی را برای این مقاله وارد کنید تا عکس‌ها مرتبط با آن باشند.');
@@ -116,37 +214,53 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        $('#' + consoleId).html('');
+        logToConsole(consoleId, 'شروع دانلود و درج تصاویر جادویی برای مقاله شناسه: ' + postId);
+        logToConsole(consoleId, 'کلمه کلیدی جهت تولید تصاویر: ' + keyword);
+
         btn.prop('disabled', true);
         statusCell.html('<div class="smart-ai-spinner"></div> در حال تولید و چیدمان تصاویر بدون نوشته...');
 
-        console.log('Smart AI SEO - Initializing Magic Image Maker for Post ID:', postId, 'with keyword:', keyword);
+        var payload = {
+            action: 'smart_ai_generate_images_for_post',
+            security: smart_ai_params.nonce,
+            post_id: postId,
+            keyword: keyword
+        };
+
+        logToConsole(consoleId, 'ارسال درخواست تولید تصویر به سرور...');
 
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
-            timeout: 300000, // ۵ دقیقه تایم‌اوت
-            data: {
-                action: 'smart_ai_generate_images_for_post',
-                security: smart_ai_params.nonce,
-                post_id: postId,
-                keyword: keyword
-            },
+            timeout: 300000,
+            data: payload,
             success: function(response) {
                 btn.prop('disabled', false);
+                logToConsole(consoleId, 'پاسخ سرور دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
+                    logToConsole(consoleId, '✔ تصاویر با موفقیت تولید و چیده شدند!');
                     statusCell.html('<span style="color: green; font-weight: bold;">✔ تصاویر و شاخص ست شدند!</span>');
                     alert(response.data.message);
                 } else {
+                    logToConsole(consoleId, '❌ خطا در فرآیند تولید تصویر: ' + (response.data ? response.data.message : 'خطای سرور'));
                     statusCell.html('<span style="color: red;">❌ خطا در ایجاد تصاویر</span>');
-                    alert('خطا در بارگذاری تصاویر: ' + response.data.message);
-                    console.error('Smart AI SEO - Image Maker API error:', response);
+                    alert('خطا در بارگذاری تصاویر: ' + (response.data ? response.data.message : 'خطای سرور'));
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 statusCell.html('<span style="color: red;">❌ خطای سرور در دانلود عکس</span>');
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در تصویرساز جادویی رخ داد!');
+                logToConsole(consoleId, 'وضعیت خطا: ' + status);
+                logToConsole(consoleId, 'جزئیات خطا: ' + error);
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
+
                 console.error('Smart AI SEO - AJAX Failure inside Image Maker:', xhr, status, error);
-                alert('خطای اتصال به سرور رخ داد! ممکن است به دلیل لودینگ طولانی یا عدم تنظیم کلید API در پیشخوان باشد. لطفا کنسول (F12) یا فایل error_log هاست را بررسی نمایید. جزئیات خطای شبکه: ' + error);
+                alert('خطای اتصال به سرور رخ داد! لطفاً گزارش دیباگ انتهای صفحه را بررسی کنید.');
             }
         });
     });
@@ -158,7 +272,7 @@ jQuery(document).ready(function($) {
         $('#image-manager-row-' + postId).slideToggle(250);
     });
 
-    // لود تکی تصاویر گالری مقاله
+    // ۴. لود تکی تصاویر گالری مقاله
     $('.load-post-images').on('click', function(e) {
         e.preventDefault();
         var btn = $(this);
@@ -166,6 +280,9 @@ jQuery(document).ready(function($) {
         var spinner = $('#gallery-loader-' + postId);
         var galleryGrid = $('#image-manager-gallery-' + postId);
         var consoleBox = $('#image-console-' + postId);
+        var consoleId = 'optimizer-console';
+
+        logToConsole(consoleId, 'بارگذاری لیست تصاویر مقاله شناسه: ' + postId);
 
         btn.prop('disabled', true);
         spinner.show();
@@ -175,7 +292,7 @@ jQuery(document).ready(function($) {
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
-            timeout: 300000, // ۵ دقیقه تایم‌اوت
+            timeout: 300000,
             data: {
                 action: 'smart_ai_get_post_images_list',
                 security: smart_ai_params.nonce,
@@ -184,6 +301,8 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 btn.prop('disabled', false);
                 spinner.hide();
+                logToConsole(consoleId, 'پاسخ سرور در لود لیست تصاویر دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
                     var images = response.data.images;
                     if (images.length === 0) {
@@ -217,19 +336,21 @@ jQuery(document).ready(function($) {
                     galleryGrid.html(html);
                 } else {
                     consoleBox.html('خطا در بارگذاری تصاویر: ' + response.data.message).show();
-                    console.error('Smart AI SEO - Load gallery error:', response);
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 spinner.hide();
                 consoleBox.html('خطای اتصال به سرور: ' + error).show();
-                console.error('Smart AI SEO - Load gallery AJAX error:', xhr, status, error);
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در دریافت لیست تصاویر!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
             }
         });
     });
 
-    // جایگزینی جادویی و تکی یک عکس خاص و حذف عکس قدیمی از هاست
+    // ۵. جایگزینی جادویی و تکی یک عکس خاص و حذف عکس قدیمی از هاست
     $(document).on('click', '.replace-image-btn', function(e) {
         e.preventDefault();
         var btn = $(this);
@@ -239,6 +360,7 @@ jQuery(document).ready(function($) {
         var query = card.find('.new-query-input').val();
         var alt = card.find('.new-alt-input').val();
         var consoleBox = $('#image-console-' + postId);
+        var consoleId = 'optimizer-console';
 
         if (!query) {
             alert('لطفاً کلمه کلیدی انگلیسی برای جستجوی تصویر جدید در Unsplash را وارد کنید.');
@@ -246,15 +368,16 @@ jQuery(document).ready(function($) {
             return;
         }
 
+        logToConsole(consoleId, 'شروع فرآیند جایگزینی تصویر قدیمی با شناسه: ' + oldId + ' برای مقاله: ' + postId);
+        logToConsole(consoleId, 'کلمه جستجوی تصویر جدید: ' + query + ' | متن آلت جدید: ' + alt);
+
         btn.prop('disabled', true).text('در حال تعویض و حذف فایل قبلی...');
         consoleBox.hide().html('');
-
-        console.log('Smart AI SEO - Triggering specific replacement for attachment ID:', oldId, 'with new query:', query);
 
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
-            timeout: 300000, // ۵ دقیقه تایم‌اوت
+            timeout: 300000,
             data: {
                 action: 'smart_ai_replace_specific_image',
                 security: smart_ai_params.nonce,
@@ -265,32 +388,42 @@ jQuery(document).ready(function($) {
             },
             success: function(response) {
                 btn.prop('disabled', false).text('🔁 جایگزینی جادویی عکس');
+                logToConsole(consoleId, 'پاسخ سرور در جایگزینی دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
+                    logToConsole(consoleId, '✔ تصویر با موفقیت جایگزین شد و فایل قدیمی از هاست کاملاً پاک گردید.');
                     alert(response.data.message);
-                    // بروزرسانی آنی کارت تصویر با آدرس عکس جدید
                     card.find('img').attr('src', response.data.new_url);
                     btn.data('old-id', response.data.new_id);
                     card.find('.new-query-input').val('');
                 } else {
-                    consoleBox.html('خطا در جایگزینی تصویر: ' + response.data.message).show();
-                    console.error('Smart AI SEO - Image replace API error:', response);
+                    logToConsole(consoleId, '❌ خطا در جایگزینی تصویر: ' + (response.data ? response.data.message : 'خطای سرور'));
+                    consoleBox.html('خطا در جایگزینی تصویر: ' + (response.data ? response.data.message : 'خطای سرور')).show();
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false).text('🔁 جایگزینی جادویی عکس');
                 consoleBox.html('خطای اتصال سرور در تعویض تصویر: ' + error).show();
-                console.error('Smart AI SEO - Image replace AJAX error:', xhr, status, error);
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در جایگزینی تصویر!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
             }
         });
     });
 
-    // مرحله اول: تحلیل و جستجوی رقبای گوگل
+    // ۶. مرحله اول: تحلیل و جستجوی رقبای گوگل
     $('#analyze-competitors-btn').on('click', function() {
         var keyword = $('#writer_keyword').val();
+        var consoleId = 'writer-console';
+
         if (!keyword) {
             alert('لطفاً کلمه کلیدی را بنویسید.');
             return;
         }
+
+        $('#' + consoleId).html('');
+        logToConsole(consoleId, 'شروع تحلیل رقبا در گوگل برای کلمه کلیدی: ' + keyword);
 
         var btn = $(this);
         var loader = $('#writer-loader');
@@ -301,6 +434,8 @@ jQuery(document).ready(function($) {
         loader.html('<div class="smart-ai-spinner"></div> در حال جستجوی گوگل و تحلیل ۳ رقیب اول...').css('display', 'flex');
         resultBox.hide();
         compBox.hide();
+
+        logToConsole(consoleId, 'ارسال درخواست خزش گوگل و تحلیل محتوا...');
 
         $.ajax({
             url: smart_ai_params.ajax_url,
@@ -314,9 +449,13 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 btn.prop('disabled', false);
                 loader.hide();
+                logToConsole(consoleId, 'پاسخ سرور در تحلیل رقبا دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
                     var html = '';
                     var competitors = response.data.competitors;
+
+                    logToConsole(consoleId, 'تحلیل رقبا با موفقیت به پایان رسید. تعداد رقبا یافت شده: ' + competitors.length);
 
                     competitors.forEach(function(item, index) {
                         html += '<div class="wp-smart-ai-card" style="border-right: 4px solid #440047; padding: 15px; margin-bottom: 10px;">';
@@ -328,29 +467,40 @@ jQuery(document).ready(function($) {
                     $('#competitor-list').html(html);
                     compBox.fadeIn();
                 } else {
-                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                    logToConsole(consoleId, '❌ خطا در تحلیل رقبا: ' + (response.data ? response.data.message : 'خطای سرور'));
+                    resultBox.addClass('error').html(response.data ? response.data.message : 'خطای سرور').fadeIn();
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                resultBox.addClass('error').html('خطا در بارگذاری رقبا: ' + error).fadeIn();
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در تحلیل رقبا رخ داد!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
+
+                resultBox.addClass('error').html('خطا در بارگذاری رقبا. جزئیات کامل در بخش دیباگ پایین صفحه ثبت گردید.').fadeIn();
             }
         });
     });
 
-    // مرحله دوم: تولید مقاله برتر و نهایی رقابتی (ارسال پرومپت و لینک‌های دستی)
+    // ۷. مرحله دوم: تولید مقاله برتر و نهایی رقابتی (ارسال پرومپت و لینک‌های دستی)
     $('#generate-best-article-btn').on('click', function() {
         var keyword = $('#writer_keyword').val();
+        var consoleId = 'writer-console';
         var competitorTexts = '';
 
         $('.competitor-snippet').each(function() {
             competitorTexts += $(this).val() + "\n---\n";
         });
 
-        // واکشی مقادیر فیلدهای جدید
         var customPrompt = $('#writer_custom_prompt').val() || '';
         var customLinks = $('#writer_custom_links').val() || '';
+
+        logToConsole(consoleId, 'شروع نگارش مقاله رقابتی نهایی با قلم هوش مصنوعی...');
+        logToConsole(consoleId, 'کلمه کلیدی: ' + keyword);
+        if (customPrompt) logToConsole(consoleId, 'دستورالعمل دستی: ' + customPrompt);
+        if (customLinks) logToConsole(consoleId, 'لینک‌های دستی: ' + customLinks);
 
         var btn = $(this);
         var loader = $('#writer-loader');
@@ -360,45 +510,63 @@ jQuery(document).ready(function($) {
         loader.html('<div class="smart-ai-spinner"></div> در حال نگارش مقاله برتر با قلم هوش مصنوعی، ایجاد آلت تگ‌ها و هماهنگی با رنک مث... (ممکن است چند دقیقه طول بکشد)').css('display', 'flex');
         resultBox.hide();
 
+        var payload = {
+            action: 'smart_ai_generate_new_post',
+            security: smart_ai_params.nonce,
+            keyword: keyword,
+            competitor_data: competitorTexts,
+            custom_prompt: customPrompt,
+            custom_links: customLinks
+        };
+
+        logToConsole(consoleId, 'ارسال درخواست تولید محتوا به همراه اطلاعات رقبا...');
+
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
             timeout: 300000,
-            data: {
-                action: 'smart_ai_generate_new_post',
-                security: smart_ai_params.nonce,
-                keyword: keyword,
-                competitor_data: competitorTexts,
-                custom_prompt: customPrompt,
-                custom_links: customLinks
-            },
+            data: payload,
             success: function(response) {
                 btn.prop('disabled', false);
                 loader.hide();
+                logToConsole(consoleId, 'پاسخ سرور دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
+                    logToConsole(consoleId, '🎉 مقاله با موفقیت تولید، تصاویر و شاخص ست شدند و مقاله به عنوان پیش‌نویس ذخیره گردید.');
                     var successHtml = '<h4>🎉 مقاله بی رقیب شما آماده شد!</h4>';
                     successHtml += '<p>' + response.data.message + '</p>';
                     successHtml += '<a href="' + response.data.edit_url + '" class="button button-primary button-large" target="_blank">رفتن به ویرایشگر پیش‌نویس مقاله</a>';
                     resultBox.removeClass('error').html(successHtml).fadeIn();
                 } else {
-                    resultBox.addClass('error').html(response.data.message).fadeIn();
+                    logToConsole(consoleId, '❌ خطا در فرآیند تولید مقاله: ' + (response.data ? response.data.message : 'خطای سرور'));
+                    resultBox.addClass('error').html(response.data ? response.data.message : 'خطای سرور').fadeIn();
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                resultBox.addClass('error').html('خطا در تولید مقاله نهایی رقابتی: ' + error).fadeIn();
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در نگارش مقاله رقابتی!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن پاسخ سرور: ' + xhr.responseText);
+
+                resultBox.addClass('error').html('خطا در تولید مقاله نهایی رقابتی. لطفاً لاگ‌های کنسول دیباگ پایین صفحه را کپی و بررسی کنید.').fadeIn();
             }
         });
     });
 
-    // پیلار و کلاستر: پیشنهاد خوشه‌های محتوایی
+    // ۸. پیلار و کلاستر: پیشنهاد خوشه‌های محتوایی
     $('#suggest-clusters-btn').on('click', function() {
         var pillarId = $('#pillar_post_select').val();
+        var consoleId = 'pillar-console';
+
         if (!pillarId) {
             alert('لطفاً یک مقاله مادر (Pillar) انتخاب کنید.');
             return;
         }
+
+        $('#' + consoleId).html('');
+        logToConsole(consoleId, 'کشف خوشه‌های پیشنهادی بر اساس مقاله مادر به شناسه: ' + pillarId);
 
         var btn = $(this);
         var loader = $('#pillar-loader');
@@ -420,9 +588,13 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 btn.prop('disabled', false);
                 loader.hide();
+                logToConsole(consoleId, 'پاسخ سرور در پیشنهاد کلاسترها دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
                     var clusters = response.data.clusters;
                     var html = '';
+
+                    logToConsole(consoleId, 'خوشه‌ها با موفقیت دریافت شدند. تعداد خوشه‌های پیشنهادی: ' + clusters.length);
 
                     // هدر پیلار
                     html += '<div class="pillar-node">مقاله مادر منتخب: ' + $('#pillar_post_select option:selected').text() + '</div>';
@@ -439,27 +611,35 @@ jQuery(document).ready(function($) {
                     html += '</div>';
                     resultContainer.html(html).fadeIn();
                 } else {
-                    alert('خطا: ' + response.data.message);
+                    logToConsole(consoleId, '❌ خطا در دریافت کلاسترها: ' + (response.data ? response.data.message : 'خطای سرور'));
+                    alert('خطا: ' + (response.data ? response.data.message : 'خطای سرور'));
                 }
             },
             error: function(xhr, status, error) {
                 btn.prop('disabled', false);
                 loader.hide();
-                alert('خطا در ارتباط با سرور: ' + error);
+
+                logToConsole(consoleId, '⚠️ خطای شبکه در دریافت کلاسترها!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
+
+                alert('خطا در ارتباط با سرور رخ داد.');
             }
         });
     });
 
-    // ایجاد فوری کلاستر و لینک به پیلار
+    // ۹. ایجاد فوری کلاستر و لینک به پیلار
     $(document).on('click', '.create-cluster-post-btn', function() {
         var btn = $(this);
         var title = btn.data('title');
         var keyword = btn.data('keyword');
         var pillarId = btn.data('pillar-id');
+        var consoleId = 'pillar-console';
+
+        logToConsole(consoleId, 'ایجاد اتوماتیک مقاله کلاستر با عنوان: "' + title + '" برای مقاله مادر: ' + pillarId);
 
         btn.prop('disabled', true).text('در حال ساخت محتوا...');
 
-        // ۱. ابتدا برای تولید محتوای کلاستر درخواست می‌دهیم
         $.ajax({
             url: smart_ai_params.ajax_url,
             type: 'POST',
@@ -469,13 +649,16 @@ jQuery(document).ready(function($) {
                 security: smart_ai_params.nonce,
                 keyword: keyword,
                 competitor_data: 'نگارش محتوای کلاستر مربوط به مقاله مادر شماره ' + pillarId,
-                is_pillar: 1 // خوشه به عنوان پیلار/کلاستر علامت‌گذاری شود
+                is_pillar: 1
             },
             success: function(response) {
+                logToConsole(consoleId, 'پاسخ سرور در ایجاد کلاستر دریافت شد: ' + JSON.stringify(response));
+
                 if (response.success) {
                     var newPostId = response.data.post_id;
+                    logToConsole(consoleId, 'ساخت موفقیت‌آمیز مقاله کلاستر با شناسه جدید: ' + newPostId);
+                    logToConsole(consoleId, 'شروع لینک‌سازی متقابل (انکرتکست: "' + keyword + '") به مقاله پیلار شناسه: ' + pillarId);
 
-                    // ۲. حالا لینک‌سازی متقابل را انجام می‌دهیم (کلاستر به پیلار با انکرتکست کلمه کلیدی)
                     $.ajax({
                         url: smart_ai_params.ajax_url,
                         type: 'POST',
@@ -488,14 +671,26 @@ jQuery(document).ready(function($) {
                             anchor: keyword
                         },
                         success: function(linkResponse) {
+                            logToConsole(consoleId, 'پاسخ سرور در لینک‌سازی دریافت شد: ' + JSON.stringify(linkResponse));
                             btn.html('✔ لینک‌سازی شد!').removeClass('button-primary').css('background', '#46b450');
                             alert('مقاله فرعی با موفقیت ایجاد شد، عکس‌ها دانلود شدند و لینک‌سازی متقابل به پیلار به اتم رسید!');
+                        },
+                        error: function(xhr, status, error) {
+                            logToConsole(consoleId, '⚠️ خطای شبکه در ثبت لینک کلاستر!');
+                            logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
                         }
                     });
                 } else {
                     btn.prop('disabled', false).text('تلاش مجدد');
+                    logToConsole(consoleId, '❌ خطا در ایجاد کلاستر: ' + response.data.message);
                     alert('خطا: ' + response.data.message);
                 }
+            },
+            error: function(xhr, status, error) {
+                btn.prop('disabled', false).text('تلاش مجدد');
+                logToConsole(consoleId, '⚠️ خطای شبکه در ایجاد کلاستر!');
+                logToConsole(consoleId, 'کد وضعیت HTTP: ' + xhr.status);
+                logToConsole(consoleId, 'متن کامل پاسخ سرور: ' + xhr.responseText);
             }
         });
     });

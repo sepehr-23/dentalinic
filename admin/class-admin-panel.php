@@ -127,7 +127,12 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_success( array( 'message' => 'تنظیمات با موفقیت ذخیره شد.' ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطایی رخ داد: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -165,7 +170,10 @@ class WPSmartAI_Admin_Panel {
             // ۱. تولید محتوای بهینه‌شده متنی (تصاویر دانلود یا عوض نمی‌شوند)
             $optimized_text = WPSmartAI_Engine::generate_optimized_content( $post->post_content, $keyword, $tone, $custom_prompt, $custom_links );
             if ( is_wp_error( $optimized_text ) ) {
-                wp_send_json_error( array( 'message' => $optimized_text->get_error_message() ) );
+                wp_send_json_error( array(
+                    'message' => $optimized_text->get_error_message(),
+                    'code'    => $optimized_text->get_error_code()
+                ) );
             }
 
             // ۲. تولید نامک انگلیسی کوتاه و تنظیم خودکار آن روی پست وردپرس
@@ -174,16 +182,19 @@ class WPSmartAI_Admin_Panel {
             // ۳. دانلود تصاویر (یا تبدیل تگ‌های PLACE_IMAGE به تصاویر واقعی)
             $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $optimized_text, $post_id );
             if ( is_wp_error( $final_content ) ) {
-                $final_content = $optimized_text;
+                wp_send_json_error( array(
+                    'message' => 'خطا در بارگذاری تصاویر: ' . $final_content->get_error_message(),
+                    'code'    => $final_content->get_error_code()
+                ) );
             }
 
             // ۴. ساخت متادیتای سئو و تغییر آن‌ها در افزونه‌های Rank Math / Yoast
             $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
             if ( is_wp_error( $meta_data ) ) {
-                $meta_data = array(
-                    'title' => $keyword . ' | راهنمای کامل',
-                    'description' => 'بهترین راهنما و بررسی سئو شده برای ' . $keyword
-                );
+                wp_send_json_error( array(
+                    'message' => 'خطا در تولید متادیتا: ' . $meta_data->get_error_message(),
+                    'code'    => $meta_data->get_error_code()
+                ) );
             }
             WPSmartAI_SEO_Integrator::update_seo_metadata( $post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
@@ -191,13 +202,20 @@ class WPSmartAI_Admin_Panel {
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
             // ۶. بروزرسانی نهایی محتوای استاندارد مقاله در وردپرس با حفظ وضعیت انتشار، نامک انگلیسی جدید و باز بودن نظرات
-            wp_update_post( array(
+            $update_status = wp_update_post( array(
                 'ID'             => $post_id,
                 'post_content'   => $final_content,
                 'post_status'    => $post_status,
                 'post_name'      => $english_slug, // تنظیم نامک انگلیسی
                 'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
-            ) );
+            ), true );
+
+            if ( is_wp_error( $update_status ) ) {
+                wp_send_json_error( array(
+                    'message' => 'خطا در آپدیت نهایی پست وردپرس: ' . $update_status->get_error_message(),
+                    'code'    => $update_status->get_error_code()
+                ) );
+            }
 
             wp_send_json_success( array(
                 'message' => 'مقاله با موفقیت بهینه‌سازی و تبدیل به قالب المنتور شد، تمام تیک‌های سئو سبز شدند!',
@@ -205,7 +223,12 @@ class WPSmartAI_Admin_Panel {
             ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -241,24 +264,38 @@ class WPSmartAI_Admin_Panel {
             $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $post->post_content, $post_id );
 
             if ( is_wp_error( $final_content ) ) {
-                wp_send_json_error( array( 'message' => $final_content->get_error_message() ) );
+                wp_send_json_error( array(
+                    'message' => $final_content->get_error_message(),
+                    'code'    => $final_content->get_error_code()
+                ) );
             }
 
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $final_content );
 
-            wp_update_post( array(
+            $update_status = wp_update_post( array(
                 'ID'             => $post_id,
                 'post_content'   => $final_content,
                 'post_status'    => $post_status,
                 'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
-            ) );
+            ), true );
+
+            if ( is_wp_error( $update_status ) ) {
+                wp_send_json_error( array(
+                    'message' => 'خطا در آپدیت نهایی پست با عکس‌ها: ' . $update_status->get_error_message()
+                ) );
+            }
 
             wp_send_json_success( array(
                 'message' => '۳ تصویر فوق‌العاده سئوشده بدون نوشته دانلود و در متن چیده شدند و تصویر شاخص نیز با موفقیت ست شد!'
             ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی در اجرای تصویرسازی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -282,7 +319,12 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_success( array( 'images' => $images ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی در لود لیست تصاویر رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای لود گالری: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -325,12 +367,18 @@ class WPSmartAI_Admin_Panel {
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $post_id, $result['content'] );
 
             // بروزرسانی پست در دیتابیس
-            wp_update_post( array(
+            $update_status = wp_update_post( array(
                 'ID'             => $post_id,
                 'post_content'   => $result['content'],
                 'post_status'    => $post_status,
                 'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
-            ) );
+            ), true );
+
+            if ( is_wp_error( $update_status ) ) {
+                wp_send_json_error( array(
+                    'message' => 'خطا در ذخیره‌سازی نهایی عکس جایگزین: ' . $update_status->get_error_message()
+                ) );
+            }
 
             wp_send_json_success( array(
                 'message'  => 'تصویر جدید جایگزین گردید و تصویر قبلی به طور کامل از رسانه وردپرس حذف شد!',
@@ -339,7 +387,12 @@ class WPSmartAI_Admin_Panel {
             ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -360,7 +413,12 @@ class WPSmartAI_Admin_Panel {
             wp_send_json_success( array( 'competitors' => $competitors ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای تحلیل رقبا: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -387,7 +445,10 @@ class WPSmartAI_Admin_Panel {
             // ۱. نگارش مقاله با هوش مصنوعی بر اساس دستورالعمل‌های جدید
             $text_response = WPSmartAI_Engine::generate_optimized_content( $competitor_data, $keyword, $tone, $custom_prompt, $custom_links, $is_pillar );
             if ( is_wp_error( $text_response ) ) {
-                wp_send_json_error( array( 'message' => $text_response->get_error_message() ) );
+                wp_send_json_error( array(
+                    'message' => $text_response->get_error_message(),
+                    'code'    => $text_response->get_error_code()
+                ) );
             }
 
             // ۲. تولید نامک انگلیسی کوتاه و سئو شده
@@ -401,25 +462,31 @@ class WPSmartAI_Admin_Panel {
                 'post_type'      => 'post',
                 'post_name'      => $english_slug, // تنظیم نامک انگلیسی
                 'comment_status' => 'open' // فعال‌سازی دیفالت بخش نظرات
-            ) );
+            ), true );
 
             if ( is_wp_error( $new_post_id ) ) {
-                wp_send_json_error( array( 'message' => 'خطا در ایجاد پیش‌نویس پست.' ) );
+                wp_send_json_error( array(
+                    'message' => 'خطا در ایجاد پیش‌نویس پست وردپرس: ' . $new_post_id->get_error_message(),
+                    'code'    => $new_post_id->get_error_code()
+                ) );
             }
 
             // ۴. دانلود تصاویر جادویی و قرار دادن در ۳ بخش متن به همراه آلت و تصویر شاخص
             $final_content = WPSmartAI_Image_Handler::insert_images_into_content( $text_response, $new_post_id );
             if ( is_wp_error( $final_content ) ) {
-                $final_content = $text_response;
+                wp_send_json_error( array(
+                    'message' => 'خطا در درج تصاویر: ' . $final_content->get_error_message(),
+                    'code'    => $final_content->get_error_code()
+                ) );
             }
 
             // ۵. تولید متادیتا و ست کردن تیک‌های سئو
             $meta_data = WPSmartAI_SEO_Integrator::generate_meta_suggestions( $final_content, $keyword );
             if ( is_wp_error( $meta_data ) ) {
-                $meta_data = array(
-                    'title' => $keyword . ' | راهنمای کامل',
-                    'description' => 'بهترین راهنما و بررسی سئو شده برای ' . $keyword
-                );
+                wp_send_json_error( array(
+                    'message' => 'خطا در تولید پیشنهادات متا: ' . $meta_data->get_error_message(),
+                    'code'    => $meta_data->get_error_code()
+                ) );
             }
             WPSmartAI_SEO_Integrator::update_seo_metadata( $new_post_id, $keyword, $meta_data['title'], $meta_data['description'] );
 
@@ -427,10 +494,16 @@ class WPSmartAI_Admin_Panel {
             WPSmartAI_SEO_Integrator::convert_post_to_elementor( $new_post_id, $final_content );
 
             // ۷. آپدیت متن نهایی مقاله در وردپرس برای همگام‌سازی بکاپ
-            wp_update_post( array(
+            $update_status = wp_update_post( array(
                 'ID'           => $new_post_id,
                 'post_content' => $final_content
-            ) );
+            ), true );
+
+            if ( is_wp_error( $update_status ) ) {
+                wp_send_json_error( array(
+                    'message' => 'خطا در ذخیره متن نهایی مقاله: ' . $update_status->get_error_message()
+                ) );
+            }
 
             wp_send_json_success( array(
                 'message' => 'مقاله فوق رقابتی با موفقیت نوشته، دانلود عکس‌ها و تصویر شاخص با آلت بهینه‌سازی شد، تبدیل به قالب المنتور شد و به عنوان پیش‌نویس ذخیره شد!',
@@ -439,7 +512,12 @@ class WPSmartAI_Admin_Panel {
             ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -458,13 +536,21 @@ class WPSmartAI_Admin_Panel {
 
             $clusters = WPSmartAI_Pilar_Builder::suggest_clusters( $post_id );
             if ( is_wp_error( $clusters ) ) {
-                wp_send_json_error( array( 'message' => $clusters->get_error_message() ) );
+                wp_send_json_error( array(
+                    'message' => $clusters->get_error_message(),
+                    'code'    => $clusters->get_error_code()
+                ) );
             }
 
             wp_send_json_success( array( 'clusters' => $clusters ) );
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 
@@ -491,7 +577,12 @@ class WPSmartAI_Admin_Panel {
             }
 
         } catch ( Throwable $e ) {
-            wp_send_json_error( array( 'message' => 'خطایی رخ داد: ' . $e->getMessage() ) );
+            wp_send_json_error( array(
+                'message' => 'خطای سیستمی: ' . $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $e->getTraceAsString()
+            ) );
         }
     }
 }
