@@ -40,36 +40,25 @@ body {
   color: var(--text);
   line-height: 1.8;
   min-height: 100vh;
+  direction: rtl; /* Set default RTL for Persian layout */
 }
 
-/* Direction utility adjustments */
-body.st-rtl {
-  direction: rtl;
-}
-body.st-ltr {
-  direction: ltr;
-}
-
-/* Base align alignments */
-body.st-rtl .st-brand,
-body.st-rtl .st-hero-copy,
-body.st-rtl .st-card,
-body.st-rtl .st-content-card,
-body.st-rtl .entry-content,
-body.st-rtl .st-footer-card,
-body.st-rtl .st-section-head {
-  text-align: right;
+body.light-mode {
+  --bg: #eef4ff;
+  --bg-2: #dde8ff;
+  --text: #10213f;
+  --muted: #55657f;
+  --card: rgba(255,255,255,.62);
+  --card-2: rgba(255,255,255,.42);
+  --border: rgba(255,255,255,.9);
+  --accent: #266dff;
+  --accent-2: #7b4cff;
+  --shadow: 0 24px 70px rgba(32,73,155,.14);
 }
 
-body.st-ltr .st-brand,
-body.st-ltr .st-hero-copy,
-body.st-ltr .st-card,
-body.st-ltr .st-content-card,
-body.st-ltr .entry-content,
-body.st-ltr .st-footer-card,
-body.st-ltr .st-section-head {
-  text-align: left;
-}
+/* Base direction helpers */
+body { direction: rtl; }
+.st-brand, .st-hero-copy, .st-card, .st-content-card, .entry-content, .st-footer-card { text-align: right; }
 
 /* Elegant Apple-Style Custom Scrollbar styling */
 ::-webkit-scrollbar {

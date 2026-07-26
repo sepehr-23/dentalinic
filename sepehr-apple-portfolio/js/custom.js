@@ -3,30 +3,29 @@
  */
 
 jQuery(document).ready(function($) {
-    // Read the actual direction and language of the document as initially loaded by WP
-    var docLang = document.documentElement.getAttribute('lang') || 'fa';
-    if (docLang.indexOf('de') === 0) {
-        docLang = 'de';
-    } else if (docLang.indexOf('en') === 0) {
-        docLang = 'en';
+    var body = document.body;
+    var button = document.querySelector('.st-theme-toggle');
+    var key = 'st-theme-mode';
+    var saved = localStorage.getItem(key);
+
+    // Apply theme on load
+    if (saved === 'light') {
+        body.classList.add('light-mode');
     } else {
-        docLang = 'fa';
+        body.classList.remove('light-mode');
     }
 
-    // Check local storage for language & theme preferences, fallback to document default
-    var initialLang = localStorage.getItem('sepehr_portfolio_lang') || docLang;
-    var initialTheme = localStorage.getItem('sepehr_portfolio_theme') || 'dark';
+    if (button) {
+        button.addEventListener('click', function () {
+            body.classList.toggle('light-mode');
+            localStorage.setItem(key, body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+    }
 
-    // Apply language and theme mode
+    // Handle standard multi-language triggers
+    var initialLang = localStorage.getItem('sepehr_portfolio_lang') || 'fa';
     setAppLanguage(initialLang);
-    applyThemeMode(initialTheme);
 
-    // Toggle theme button listener
-    $('.st-theme-toggle').on('click', function() {
-        toggleThemeMode();
-    });
-
-    // Custom language switching clicks inside standard controls
     $(document).on('click', '.st-lang-switcher span, .st-lang-switcher a', function() {
         var lang = $(this).data('lang') || $(this).text().toLowerCase().trim();
         if (lang === 'fa' || lang === 'en' || lang === 'de') {
@@ -36,42 +35,11 @@ jQuery(document).ready(function($) {
 });
 
 /**
- * Handle Theme switching logic
- */
-function applyThemeMode(theme) {
-    var body = document.body;
-    var toggleBtn = document.querySelector('.st-theme-toggle-icon');
-
-    if (theme === 'light') {
-        body.classList.remove('dark-mode');
-        body.classList.add('light-mode');
-        if (toggleBtn) {
-            toggleBtn.textContent = '☼';
-        }
-    } else {
-        body.classList.remove('light-mode');
-        body.classList.add('dark-mode');
-        if (toggleBtn) {
-            toggleBtn.textContent = '◐';
-        }
-    }
-}
-
-function toggleThemeMode() {
-    var currentTheme = document.body.classList.contains('light-mode') ? 'light' : 'dark';
-    var newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    localStorage.setItem('sepehr_portfolio_theme', newTheme);
-    applyThemeMode(newTheme);
-}
-
-/**
- * Handle App Multi-Language switching logic with fully clean style direction integration
+ * Handle App Multi-Language switching logic
  */
 function setAppLanguage(lang) {
-    // Store in localStorage
     localStorage.setItem('sepehr_portfolio_lang', lang);
 
-    // Update active state in switcher element
     var switcherContainer = document.querySelector('.st-lang-switcher');
     if (switcherContainer) {
         var children = switcherContainer.children;
@@ -86,27 +54,27 @@ function setAppLanguage(lang) {
         }
     }
 
-    // Toggle HTML direction based on RTL or LTR language
+    // Adjust document alignments and tags based on directionality
     var htmlTag = document.documentElement;
     if (lang === 'fa') {
         htmlTag.setAttribute('dir', 'rtl');
         htmlTag.setAttribute('lang', 'fa-IR');
-        document.body.classList.remove('st-ltr');
-        document.body.classList.add('st-rtl');
+        document.body.style.direction = "rtl";
         document.body.style.fontFamily = "'Vazirmatn', 'Inter', sans-serif";
+        jQuery('.st-brand, .st-hero-copy, .st-card, .st-content-card, .entry-content, .st-footer-card').css('text-align', 'right');
     } else {
         htmlTag.setAttribute('dir', 'ltr');
-        document.body.classList.remove('st-rtl');
-        document.body.classList.add('st-ltr');
+        document.body.style.direction = "ltr";
         if (lang === 'de') {
             htmlTag.setAttribute('lang', 'de-DE');
         } else {
             htmlTag.setAttribute('lang', 'en-US');
         }
         document.body.style.fontFamily = "'Inter', 'Vazirmatn', sans-serif";
+        jQuery('.st-brand, .st-hero-copy, .st-card, .st-content-card, .entry-content, .st-footer-card').css('text-align', 'left');
     }
 
-    // Toggle visible elements inside document containing class tags
+    // Custom language element switching
     var allLangTexts = document.querySelectorAll('.lang-text');
     allLangTexts.forEach(function(el) {
         el.style.display = 'none';
@@ -124,4 +92,29 @@ function setAppLanguage(lang) {
             el.style.display = 'initial';
         }
     });
+
+    // Fire custom translator trigger for automatic Google translation (EN / DE)
+    triggerAutoTranslation(lang);
+}
+
+/**
+ * Handle Automatic Google Translate trigger for EN / DE
+ */
+function triggerAutoTranslation(lang) {
+    if (lang === 'fa') {
+        // Return back to original Persian
+        var iframe = document.querySelector('.goog-te-banner-frame');
+        if (iframe) {
+            var doc = iframe.contentDocument || iframe.contentWindow.document;
+            var restoreBtn = doc.getElementById(':1.restore') || doc.querySelector('.goog-te-button button');
+            if (restoreBtn) restoreBtn.click();
+        }
+        return;
+    }
+    // Select translate select element and dispatch manual change events
+    var translateSelect = document.querySelector('.goog-te-combo');
+    if (translateSelect) {
+        translateSelect.value = lang;
+        translateSelect.dispatchEvent(new Event('change'));
+    }
 }

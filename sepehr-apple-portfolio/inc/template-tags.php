@@ -2,10 +2,17 @@
 if (!defined('ABSPATH')) exit;
 
 /**
- * Get theme mod option with fallback.
+ * Get dynamic theme option depending on manual selected translation options
  */
 function st_get_theme_option($key, $default = '') {
-    $value = get_theme_mod($key, $default);
+    $lang = st_current_lang();
+    // Try to retrieve language specific value first
+    $lang_key = $key . '_' . $lang;
+    $value = get_theme_mod($lang_key, '');
+
+    if ($value === '') {
+        $value = get_theme_mod($key, $default);
+    }
     return $value === '' ? $default : $value;
 }
 
@@ -14,11 +21,11 @@ function st_get_theme_option($key, $default = '') {
  */
 function st_social_links() {
     return array_filter(array(
-        'LinkedIn'  => st_get_theme_option('st_linkedin'),
-        'GitHub'    => st_get_theme_option('st_github'),
-        'Behance'   => st_get_theme_option('st_behance'),
-        'Instagram' => st_get_theme_option('st_instagram'),
-        'Telegram'  => st_get_theme_option('st_telegram'),
+        'LinkedIn'  => get_theme_mod('st_linkedin'),
+        'GitHub'    => get_theme_mod('st_github'),
+        'Behance'   => get_theme_mod('st_behance'),
+        'Instagram' => get_theme_mod('st_instagram'),
+        'Telegram'  => get_theme_mod('st_telegram'),
     ));
 }
 
@@ -31,7 +38,7 @@ function st_language_switcher() {
         if (!empty($langs)) {
             echo '<div class="st-lang-switcher">';
             foreach ($langs as $lang) {
-                printf('<a class="%1$s" href="%2$s">%3$s</a>', esc_attr($lang['current_lang'] ? 'is-active' : ''), esc_url($lang['url']), esc_html(strtoupper($lang['slug'])));
+                printf('<a class="%1$s" href="%2$s" data-lang="%3$s">%4$s</a>', esc_attr($lang['current_lang'] ? 'is-active' : ''), esc_url($lang['url']), esc_attr($lang['slug']), esc_html(strtoupper($lang['slug'])));
             }
             echo '</div>';
             return;

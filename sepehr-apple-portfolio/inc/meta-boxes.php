@@ -32,6 +32,7 @@ function st_render_project_meta($post) {
     st_field('st_project_url', st_t('لینک پروژه','Project URL','Projekt-URL'), 'url');
     st_field('st_project_stack', st_t('تکنولوژی‌ها','Tech Stack','Tech-Stack'));
     st_field('st_project_year', st_t('سال','Year','Jahr'));
+    st_field('st_project_download_url', st_t('لینک دانلود فایل','Download File URL','Download-Datei URL'), 'url');
 }
 
 function st_render_common_meta($post) {
@@ -40,6 +41,7 @@ function st_render_common_meta($post) {
     st_field('st_meta_role', st_t('عنوان / نقش','Title / Role','Titel / Rolle'));
     st_field('st_meta_date', st_t('بازه زمانی','Date Range','Zeitraum'));
     st_field('st_meta_url', st_t('لینک مرتبط','Related URL','Zugehörige URL'), 'url');
+    st_field('st_meta_download_url', st_t('لینک دانلود گواهینامه / فایل','Download Certificate / File URL','Zertifikatsdownload URL'), 'url');
 }
 
 /**
@@ -50,11 +52,11 @@ function st_save_meta($post_id) {
     if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
     if (!current_user_can('edit_post', $post_id)) return;
 
-    $fields = array('st_skill_level','st_project_url','st_project_stack','st_project_year','st_meta_org','st_meta_role','st_meta_date','st_meta_url');
+    $fields = array('st_skill_level','st_project_url','st_project_stack','st_project_year','st_project_download_url','st_meta_org','st_meta_role','st_meta_date','st_meta_url','st_meta_download_url');
     foreach ($fields as $field) {
         if (isset($_POST[$field])) {
             $sanitize_cb = 'sanitize_text_field';
-            if (in_array($field, array('st_project_url', 'st_meta_url'))) {
+            if (in_array($field, array('st_project_url', 'st_project_download_url', 'st_meta_url', 'st_meta_download_url'))) {
                 $sanitize_cb = 'esc_url_raw';
             }
             update_post_meta($post_id, $field, $sanitize_cb(wp_unslash($_POST[$field])));
