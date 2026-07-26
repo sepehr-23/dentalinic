@@ -11,14 +11,27 @@ jQuery(document).ready(function($) {
     // Apply theme on load
     if (saved === 'light') {
         body.classList.add('light-mode');
+        if (button) {
+            var icon = button.querySelector('i');
+            if (icon) icon.className = 'fa-regular fa-sun';
+        }
     } else {
         body.classList.remove('light-mode');
+        if (button) {
+            var icon = button.querySelector('i');
+            if (icon) icon.className = 'fa-regular fa-moon';
+        }
     }
 
     if (button) {
         button.addEventListener('click', function () {
             body.classList.toggle('light-mode');
-            localStorage.setItem(key, body.classList.contains('light-mode') ? 'light' : 'dark');
+            var isLight = body.classList.contains('light-mode');
+            localStorage.setItem(key, isLight ? 'light' : 'dark');
+            var icon = button.querySelector('i');
+            if (icon) {
+                icon.className = isLight ? 'fa-regular fa-sun' : 'fa-regular fa-moon';
+            }
         });
     }
 
