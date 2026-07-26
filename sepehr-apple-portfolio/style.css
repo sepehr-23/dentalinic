@@ -1,0 +1,19 @@
+/*
+Theme Name: Sepehr Apple Portfolio
+Theme URI: https://github.com/sepehr-talebi
+Author: Sepehr Talebi
+Author URI: https://github.com/sepehr-talebi
+Description: A premium, highly customizable, Apple-inspired portfolio and resume WordPress theme. Designed for Sepehr Talebi (23 years old). Features gorgeous glassmorphism, native dark/light mode, fully responsive layout, 3 language options (Persian, German, English), and full Elementor compatibility.
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: sepehr-apple-portfolio
+Tags: portfolio, resume, responsive-layout, dark-colors, light-colors, custom-colors, translation-ready, rtl-language-support
+*/
+
+/* Base CSS for standard WP compliance. Theme styled inline and in dedicated styles. */
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
