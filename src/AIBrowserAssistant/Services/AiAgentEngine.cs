@@ -125,9 +125,9 @@ namespace AIBrowserAssistant.Services
 
 خروجی خود را حتما به فرمت JSON زیر ارسال کن:
 {
-  \"thinking\": \"استدلال دقیق هوش مصنوعی به فارسی\",
-  \"targetKeywords\": \"کلمه یا کلمات انگلیسی/فارسی روی دکمه (مثلا wed یا fri یا چهارشنبه)\",
-  \"replyMessage\": \"پاسخ فارسی به کاربر\"
+  ""thinking"": ""استدلال دقیق هوش مصنوعی به فارسی"",
+  ""targetKeywords"": ""کلمه یا کلمات انگلیسی/فارسی روی دکمه (مثلا wed یا fri یا چهارشنبه)"",
+  ""replyMessage"": ""پاسخ فارسی به کاربر""
 }";
 
             string userPromptContext = $"آدرس فعلی: {currentUrl}\nدستور کاربر: {userPrompt}\nمحتوای متنی صفحه:\n{pageText}";
