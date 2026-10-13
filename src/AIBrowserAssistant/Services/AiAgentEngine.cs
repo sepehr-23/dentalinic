@@ -67,6 +67,12 @@ namespace AIBrowserAssistant.Services
         public async Task<string> ProcessUserCommandAsync(string userPrompt, string currentUrl)
         {
             LogThinking($"📥 دریافت دستور جدید کاربر: '{userPrompt}'");
+
+            if (string.IsNullOrWhiteSpace(_llmClient.ApiKey) && _memoryManager.FindMatchingKnowledge(userPrompt, "") == null)
+            {
+                return "⚠️ کلید API هنوز در برنامه تنظیم نشده است. لطفا ابتدا به تب '⚙️ تنظیمات API و رفع تحریم' بروید و کلید API خود را وارد و ذخیره کنید. (همچنین می‌توانید بدون API، خودتان روی دکمه‌های سایت کلیک کنید تا برنامه آنها را یاد بگیرد).";
+            }
+
             LogThinking("🔎 در حال بررسی حافظه دیتابیس برای الگوهای قبلاً یادگرفته‌شده...");
 
             Uri uri = null;
@@ -116,23 +122,31 @@ namespace AIBrowserAssistant.Services
             }
 
             // 2. LLM Reasoning fallback if direct match didn't click
-            LogThinking("🤖 عدم یافتن دکمه مستقیم در حافظه اولیه؛ در حال استدلال آنلاین با مدل هوش مصنوعی...");
+            LogThinking("🤖 در حال تحلیل آنلاین با مدل هوش مصنوعی...");
             string pageText = await _browserController.GetVisiblePageTextAsync();
 
             string systemPrompt = @"تو یک دستیار هوشمند مرورگر وب هستی که به زبان فارسی پاسخ می‌دهی.
-وظیفه تو استدلال و تصمیم‌گیری برای یافتن دکمه یا لینک متناسب با درخواست کاربر است.
-اگر کاربر روزهای هفته مثل چهارشنبه، جمعه، Wednesday، Friday، Wed، Fri را خواست، کلیدواژه انگلیسی و فارسی متناسب را تشخیص بده.
+اگر کاربر یک احوالپرسی ساده (مثل سلام، چطوری) یا یک سوال عمومی پرسید، نیاز به کلیک روی دکمه نیست (isActionNeeded را false بگذار).
+اگر کاربر خواست روی گزینه‌ای در صفحه کلیک شود (مثل روزهای هفته: چهارشنبه، جمعه، Wed، Fri، یا دکمه‌های دیگر):
+- isActionNeeded را true بگذار.
+- targetKeywords کلمه یا کلمات انگلیسی/فارسی روی آن دکمه را قرار بده.
 
-خروجی خود را حتما به فرمت JSON زیر ارسال کن:
+خروجی را حتماً و فقط به فرمت JSON زیر ارسال کن:
 {
-  ""thinking"": ""استدلال دقیق هوش مصنوعی به فارسی"",
-  ""targetKeywords"": ""کلمه یا کلمات انگلیسی/فارسی روی دکمه (مثلا wed یا fri یا چهارشنبه)"",
+  ""isActionNeeded"": true یا false,
+  ""thinking"": ""استدلال هوش مصنوعی به فارسی"",
+  ""targetKeywords"": ""کلمه روی دکمه (مثلا wed یا fri یا چهارشنبه)"",
   ""replyMessage"": ""پاسخ فارسی به کاربر""
 }";
 
-            string userPromptContext = $"آدرس فعلی: {currentUrl}\nدستور کاربر: {userPrompt}\nمحتوای متنی صفحه:\n{pageText}";
+            string userPromptContext = $"آدرس فعلی مرورگر: {currentUrl}\nدستور کاربر: {userPrompt}\nمتن قابل مشاهده در صفحه فعلی:\n{pageText}";
 
             string llmRawResult = await _llmClient.GenerateResponseAsync(systemPrompt, userPromptContext);
+
+            if (llmRawResult.StartsWith("⚠️") || llmRawResult.StartsWith("❌"))
+            {
+                return llmRawResult;
+            }
 
             try
             {
@@ -150,6 +164,7 @@ namespace AIBrowserAssistant.Services
                 }
 
                 dynamic parsed = JsonConvert.DeserializeObject(cleanJson.Trim());
+                bool isActionNeeded = parsed?.isActionNeeded != null ? Convert.ToBoolean(parsed.isActionNeeded) : true;
                 string thinking = parsed?.thinking?.ToString();
                 string targetKw = parsed?.targetKeywords?.ToString();
                 string reply = parsed?.replyMessage?.ToString();
@@ -157,6 +172,11 @@ namespace AIBrowserAssistant.Services
                 if (!string.IsNullOrEmpty(thinking))
                 {
                     LogThinking($"🧠 استدلال AI: {thinking}");
+                }
+
+                if (!isActionNeeded || string.IsNullOrWhiteSpace(targetKw))
+                {
+                    return !string.IsNullOrWhiteSpace(reply) ? reply : "سلام! چطور می‌توانم در وب‌گردی و اتوماسیون سایت‌ها به شما کمک کنم؟";
                 }
 
                 if (!string.IsNullOrEmpty(targetKw))
